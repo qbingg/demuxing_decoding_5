@@ -1,0 +1,12 @@
+﻿# Qt Creator 15.0/18.0+
+build/
+*.user
+.qtcreator/
+
+# Visual Studio
+.vs/
+out/
+CMakePresets.json
+CMakeUserPresets.json
+
+# 清除所有构建产物：git clean -fdXn
