@@ -142,5 +142,8 @@ if(CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
     endif()
 elseif(CMAKE_HOST_SYSTEM_NAME MATCHES "Linux")
     message(STATUS ">>> Building on Linux host")
-
+    # 1. sudo apt install libsdl3-dev
+    # 2. https://wiki.libsdl.org/SDL3/README-cmake
+    find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
+    target_link_libraries(${MY_TARGET_NAME} PRIVATE SDL3::SDL3)
 endif()
