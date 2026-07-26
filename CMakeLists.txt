@@ -13,6 +13,9 @@ qt_add_executable(demuxing_decoding_5
     MainWindow.ui
 )
 
+# MinGW/gcc：把当前源码目录（MyGLWidget.h 所在目录）加入头文件搜索路径
+target_include_directories(demuxing_decoding_5 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
 target_link_libraries(demuxing_decoding_5
     PRIVATE
         Qt::Core
@@ -33,3 +36,14 @@ qt_generate_deploy_app_script(
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
 install(SCRIPT ${deploy_script})
+
+if(CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
+    message(STATUS ">>> Building on Windows host")
+    if(MSVC)
+        message(STATUS ">>> The compiler is MSVC")
+    elseif(MINGW)
+        message(STATUS ">>> The compiler is GNU ABI on Windows (MinGW)")
+    endif()
+elseif(CMAKE_HOST_SYSTEM_NAME MATCHES "Linux")
+    message(STATUS ">>> Building on Linux host")
+endif()
