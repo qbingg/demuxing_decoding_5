@@ -26,6 +26,8 @@ extern "C" {
 
 int main(int argc, char *argv[])
 {
+    SDL_Init(SDL_INIT_AUDIO);
+
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
