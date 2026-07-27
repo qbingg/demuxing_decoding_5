@@ -26,6 +26,7 @@ extern "C" {
 
 int main(int argc, char *argv[])
 {
+    //TEST
     SDL_Init(SDL_INIT_AUDIO);
 
     QApplication a(argc, argv);
