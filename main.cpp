@@ -35,6 +35,11 @@ int main(int argc, char *argv[])
     //TEST
     SDL_Init(SDL_INIT_AUDIO);
 
+    QLoggingCategory::setFilterRules(
+        "*.debug=true\n"
+        "log1.debug=true\n"
+        );
+
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
