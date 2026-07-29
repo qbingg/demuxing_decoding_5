@@ -4,7 +4,6 @@
 #include <QLoggingCategory>
 Q_DECLARE_LOGGING_CATEGORY(log1)
 
-
 #include <QFileInfo>
 #include <QMainWindow>
 
