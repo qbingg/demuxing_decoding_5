@@ -26,6 +26,12 @@ extern "C" {
 
 int main(int argc, char *argv[])
 {
+#if defined(__linux__)
+    //Ubuntu26.04,Qt6.5.3缺失窗口阴影和圆角，切换回X11/XWayland
+    //https://www.mail-archive.com/ubuntu-bugs%40lists.ubuntu.com/msg6288618.html
+    qputenv("QT_QPA_PLATFORM", "xcb");
+#endif
+
     //TEST
     SDL_Init(SDL_INIT_AUDIO);
 
