@@ -37,6 +37,16 @@ qt_generate_deploy_app_script(
 )
 install(SCRIPT ${deploy_script})
 
+# cmake跨平台定义"测试视频文件"相对路径，并转为绝对路径
+set(MY_TARGET_NAME demuxing_decoding_5)
+set(TEST_VIDEOS_REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/test_videos/352x288_25fps.mp4")
+cmake_path(ABSOLUTE_PATH TEST_VIDEOS_REL_PATH OUTPUT_VARIABLE TEST_VIDEOS_ABS_PATH)
+# 传递宏给目标（替换你的target名称）
+target_compile_definitions(${MY_TARGET_NAME}
+    PRIVATE
+        TEST_VIDEOS_ABS_PATH="${TEST_VIDEOS_ABS_PATH}"
+)
+
 set(MY_TARGET_NAME demuxing_decoding_5)
 message(STATUS ">>> Linking FFmpeg dev lib")
 if(CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")

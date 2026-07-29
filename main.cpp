@@ -38,5 +38,14 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
+
+    // 启动时，默认将“测试视频文件路径”添加到标题栏
+    // 文件路径依据${CMAKE_CURRENT_SOURCE_DIR}，宏直接展开为字符串字面量
+    const char* testVideoPath = TEST_VIDEOS_ABS_PATH;
+    QString path = QString::fromUtf8(testVideoPath);
+    QFileInfo testFile(path);
+    if(testFile.exists())
+        w.setWindowTitle(testFile.absoluteFilePath());
+
     return a.exec();
 }
