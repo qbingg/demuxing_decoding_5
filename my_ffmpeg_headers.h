@@ -27,9 +27,30 @@ extern "C"{
 }
 
 /** 2. FFmpegPlayerCtx */
+#include <QFileInfo>
 #include "MyPacketQueue.h"
 
+/* 解封装线程宏 */
+// 根据ffplay.c的q->size += pkt1.pkt->size + sizeof(pkt1);
+// 可知，单位是Byte，所以这里的16估计和16位深bit，没什么关系。
+#define MAX_AUDIOQ_SIZE (5 * 16 * 1024)
+// 5 * 256 KByte
+#define MAX_VIDEOQ_SIZE (5 * 256 * 1024)
+
 struct FFmpegPlayerCtx {
+    /* 解封装 */
+    QFileInfo iFile;
+    AVFormatContext *fmt_ctx = NULL;
+
+    int video_stream_idx = -1;
+    AVCodecContext *video_dec_ctx = NULL;
+    AVStream *video_stream = NULL;
+    MyPacketQueue videoq;
+
+    int audio_stream_idx = -1;
+    AVCodecContext *audio_dec_ctx = NULL;
+    AVStream *audio_stream = NULL;
+    MyPacketQueue audioq;
 
 };
 
