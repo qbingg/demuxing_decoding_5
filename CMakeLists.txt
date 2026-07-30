@@ -13,6 +13,8 @@ qt_add_executable(demuxing_decoding_5
     MainWindow.ui
     my_ffmpeg_headers.h
     MyPacketQueue.h MyPacketQueue.cpp
+    MyDemuxThread.h MyDemuxThread.cpp
+    log.h log.cpp
 )
 
 # MinGW/gcc：把当前源码目录（MyGLWidget.h 所在目录）加入头文件搜索路径
