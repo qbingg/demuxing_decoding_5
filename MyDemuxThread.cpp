@@ -21,7 +21,6 @@ void MyDemuxThread::stopThread()
 
 int MyDemuxThread::initDemuxThread()
 {
-    int ret = 0;
     QByteArray arr1 = is->iFile.absoluteFilePath().toUtf8();
     const char *src_filename = arr1.data();
 
@@ -29,13 +28,13 @@ int MyDemuxThread::initDemuxThread()
     /* open input file, and allocate format context */
     if (avformat_open_input(&fmt_ctx, src_filename, NULL, NULL) < 0) {
         qDebug() << "Could not open source file " << src_filename;
-        exit(1);
+        return -1;
     }
     is->fmt_ctx = fmt_ctx;
     /* retrieve stream information */
     if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
         qDebug() << "Could not find stream information";
-        exit(1);
+        return -1;
     }
 
     int video_stream_idx = -1;
@@ -61,12 +60,12 @@ int MyDemuxThread::initDemuxThread()
 
     av_dump_format(fmt_ctx, 0, src_filename, 0);
 
-    if (!video_stream) {
+    if (!audio_stream && !video_stream) {
         qDebug() << "Could not find audio or video stream in the input, aborting";
-        ret = 1;
+        return -1;
     }
 
-    return ret;
+    return 0;
 }
 
 void MyDemuxThread::finiDemuxThread()
@@ -205,7 +204,7 @@ void MyDemuxThread::run()
         }
 
         if(av_read_frame(is->fmt_ctx, pkt) < 0){
-            qDebug()<< "av_read_frame error";
+            qCDebug(demux) << "av_read_frame error";
             // break;
             msleep(10);
             continue;
@@ -215,7 +214,7 @@ void MyDemuxThread::run()
 
             if (pkt->flags & AV_PKT_FLAG_KEY){
                 emit sendVideoPktIDR(pkt->pts * av_q2d(is->video_stream->time_base));
-                qCDebug(demux)<<"sendVideoPktIDR";
+                qCDebug(demux) << "sendVideoPktIDR";
             }
 
             is->videoq.enqueue(pkt);
