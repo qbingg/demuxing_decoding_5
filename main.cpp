@@ -9,6 +9,11 @@
  * 4. 在Win/Linux均可以运行
  * 5. 学习跨平台宏
  * 6. 基于demuxing_decoding_4的研究成果，写一个更好的空白播放器模板
+ * 7. 统一ffmpeg头文件包含
+ * 8. qDebug分类，低频通用打印和高频单独打印
+ * 9. 函数出口风格规定：单一出口风格，多出口风格，一个函数内部只能选用一种范式，不允许混搭。
+ *      （简单地以用到 ret 为依据划分，涉及循环内判断，涉及FFmpeg/SDL等C库需要批量统一释放资源等情况，使用单一出口风格。）
+ * 10. SDL3音频使用callback模式，未来项目在考虑pull模式（我需要循序渐进而不是一步到位）
  */
 
 //TEST
@@ -36,8 +41,8 @@ int main(int argc, char *argv[])
     SDL_Init(SDL_INIT_AUDIO);
 
     QLoggingCategory::setFilterRules(
-        "*.debug=true\n"
-        "log1.debug=true\n"
+        "*.debug=true\n"            /* 保留 */
+        "log1.debug=true\n"         /* 低频通用打印 */
         );
 
     QApplication a(argc, argv);
