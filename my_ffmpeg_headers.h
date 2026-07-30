@@ -33,8 +33,199 @@ struct FFmpegPlayerCtx {
 
 };
 
+/** 3. 声明我自己封装的ffmpeg函数 */
+#include <QDebug>
+#include <QImage>
+// 命名空间：my ffmpeg utility
+namespace myffut {
+
+/**
+ * @brief 将 YUV 帧转换为 RGB QImage。
+ * @param src 输入的 AVFrame（YUV420P），必须非空且数据有效。
+ * @param dst 输出的 QImage 引用，函数内会重新分配并填充 RGB 数据。
+ * @return 0 成功；-1 失败
+ */
+inline int yuv_to_rgb(AVFrame *src, QImage &dst)
+{
+    qDebug() << "准备执行AVFrame转QImage，Video dimensions:"
+             << "width =" << src->width
+             << "height =" << src->height
+             << "crop_top =" << src->crop_top
+             << "crop_bottom =" << src->crop_bottom
+             << "crop_left =" << src->crop_left
+             << "crop_right =" << src->crop_right;
+
+    if (src->width == 0)
+    {
+        qDebug() << "输入的src为空";
+        return -1;
+    }
+
+    // cv::cvtColor(src,dst,cv::COLOR_YUV2RGB_I420);
+
+    SwsContext* sws_ctx = nullptr;
+
+    sws_ctx = sws_getContext(
+        src->width, src->height, AV_PIX_FMT_YUV420P,  // 输入：YUV420P 平面格式
+        src->width, src->height, AV_PIX_FMT_RGB24,    // 输出：RGB24 打包格式，与QImage格式完全匹配
+        SWS_BILINEAR, nullptr, nullptr, nullptr
+        );
+
+    // 直接创建目标 QImage，由它自行管理内存
+    QImage qImg(src->width, src->height, QImage::Format_RGB888);
+    // 配置输出缓冲区：直接使用 QImage 内部的像素内存
+    uint8_t* dst_data[1] = { qImg.bits() };//返回指向第一个像素数据的指针。
+    int dst_linesize[1] = { static_cast<int>(qImg.bytesPerLine()) };//等于linesize，Returns the number of bytes per image scanline.
+
+    // 执行格式转换，结果直接写入 QImage 内存
+    sws_scale(sws_ctx,
+              src->data, src->linesize,  // 输入 YUV 三平面数据与对应步长
+              0, src->height,                 // 转换全部高度的行
+              dst_data, dst_linesize         // 输出到 QImage 缓冲区
+              );
+
+    dst = qImg.copy();
+
+    if (sws_ctx) {
+        sws_freeContext(sws_ctx);
+    }
+
+    return 0;
+}
+
+inline int swr_cvt_pcm(AVFrame *src,
+                       QByteArray &dst,
+                       const int dst_channels = 2,
+                       const int dst_freq_sample_rate = 48000,
+                       const enum AVSampleFormat dst_sample_fmt = AV_SAMPLE_FMT_S16)
+{
+    /* 第1步、init变量 swr_ctx */
+    SwrContext *swr_ctx = nullptr;
+    swr_ctx = swr_alloc();//ffmpeg文档：与libavcodec和libavformat不同，此结构是不透明的。这意味着，如果您想设置选项，必须使用AVOptions API，而不能直接为该结构的成员设置值。
+    //输入音频格式，直接用音频解码上下文的参数即可
+    // av_opt_set_chlayout(swr_ctx, "in_chlayout", &is->audio_dec_ctx->ch_layout, 0);
+    // av_opt_set_int(swr_ctx, "in_sample_rate",       is->audio_dec_ctx->sample_rate, 0);
+    // av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", is->audio_dec_ctx->sample_fmt, 0);
+    //不使用AVCodecContext而是使用AVFrame的参数，这样就不需要输入音频解码上下文
+    av_opt_set_chlayout(swr_ctx, "in_chlayout", &src->ch_layout, 0);
+    av_opt_set_int(swr_ctx, "in_sample_rate",       src->sample_rate, 0);
+    av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", static_cast<AVSampleFormat>(src->format), 0);//需要强转：dectx分为sample_fmt/pix_fmt(enum)区分音频视频，而AVFrame不区分:format(int)
+
+    AVChannelLayout outLayout;
+    // use stereo
+    av_channel_layout_default(&outLayout, dst_channels);
+    //输入音频格式，建议在FFmpegPlayerCtx声明输出格式，而不是使用魔法数字
+    av_opt_set_chlayout(swr_ctx, "out_chlayout", &outLayout, 0);
+    av_opt_set_int(swr_ctx, "out_sample_rate",       dst_freq_sample_rate, 0);
+    av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", dst_sample_fmt, 0);
+    swr_init(swr_ctx);
+
+    /* 第2步、转换音频格式为目标格式 */
+    // 确定dst的每个采样点的位深
+    int dst_bytes_per_sample = -1;
+    switch (dst_sample_fmt) {
+    case AV_SAMPLE_FMT_U8:{
+        dst_bytes_per_sample = 1;// 8bit
+        break;
+    }
+    case AV_SAMPLE_FMT_S16:{
+        dst_bytes_per_sample = 2;// 16bit
+        break;
+    }
+    case AV_SAMPLE_FMT_S32:{
+        dst_bytes_per_sample = 4;// 32bit
+        break;
+    }
+    default:
+        break;
+    }
+    if(dst_bytes_per_sample == -1){
+        qDebug()<<"swr_cvt_pcm()错误：未知dst_sample_fmt";
+        return -1;
+    }
+
+    //swr_convert()文档：如果输入的数据量超过输出空间，则输入数据将被缓冲。
+    //                  您可以通过使用swr_get_out_samples()函数来获取给定输入样本数所需输出样本数的上限，从而避免这种缓冲。
+    int upper_bound_samples_per_channel = swr_get_out_samples(swr_ctx, src->nb_samples);
+    uint8_t *out[4] = {0};
+    int upper_bound_len = upper_bound_samples_per_channel * dst_bytes_per_sample * dst_channels;
+    out[0] = (uint8_t*)av_malloc(upper_bound_len);
+    // number of samples output per channel
+    int samples = swr_convert(swr_ctx,
+                              out,
+                              upper_bound_samples_per_channel,//每个通道可用的输出采样点 amount of space available for output in samples per channel
+                              (const uint8_t**)src->data,
+                              src->nb_samples
+                              );
+    if (samples > 0) {
+        // memcpy(is->audio_buf, out[0], samples * 2 * 2);
+        // 入队，数据拷贝到audio_buf
+        // is->audio_buf_q.enqueue((const char*)out[0],
+        //                         samples * dst_bytes * dst_channels);
+        int len = samples * dst_bytes_per_sample * dst_channels;
+        dst.append((const char*)out[0], len);
+    }
+    /* 第3步、释放局部资源 */
+    av_free(out[0]);
+    /* 第4步、释放全局资源 */
+    swr_free(&swr_ctx);
+    swr_ctx = nullptr;
+
+    return 0;
+}
+
+inline int frame_to_yuv420planes(AVFrame *src,
+                                 QByteArray &dst_yPlane,
+                                 QByteArray &dst_uPlane,
+                                 QByteArray &dst_vPlane)
+{
+    const int width = src->width;
+    const int height = src->height;
+    const int chromaWidth = (width + 1) / 2;
+    const int chromaHeight = (height + 1) / 2;
+
+    if(width <= 0 || height <= 0){
+        qDebug()<<"frame_to_yuv420planes：frame的宽高无效，"
+                 <<"width:"<<width
+                 <<"height"<<height;
+        return -1;
+    }
+
+    //注意memcpy前，一定要给空的QByteArray分配空间
+    dst_yPlane.resize(width * height);
+    dst_uPlane.resize(chromaWidth * chromaHeight);
+    dst_vPlane.resize(chromaWidth * chromaHeight);
+
+    //三平面的for循环参考自：手册19：MyMux.cpp（OpenCV图片合成视频）
+    //拷贝对象反转，y、u、v指针不是opencv一样连续的
+
+    // y
+    char *y_ptr = dst_yPlane.data();
+    for (int y = 0; y < height; ++y) {
+        memcpy(y_ptr + y * width,
+               src->data[0] + y * src->linesize[0],
+               width);
+    }
+    // u
+    char* u_ptr = dst_uPlane.data();
+    for (int u = 0; u < chromaHeight; ++u) {
+        memcpy(u_ptr + u * chromaWidth,
+               src->data[1] + u * src->linesize[1],
+               chromaWidth);
+    }
+    // v
+    char* v_ptr = dst_vPlane.data();
+    for (int v = 0; v < chromaHeight; ++v) {
+        memcpy(v_ptr + v * chromaWidth,
+               src->data[2] + v * src->linesize[2],
+               chromaWidth);
+    }
+
+    return 0;
+}
 
 
+}
 
 
 
