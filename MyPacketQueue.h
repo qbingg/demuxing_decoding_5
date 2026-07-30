@@ -16,7 +16,7 @@ public:
 
     //入队，参考自ffplay.c的int packet_queue_put(PacketQueue *q, AVPacket *pkt)
     int enqueue(AVPacket *pkt);
-    //出队
+    //出队 packet_queue_get()
     int dequeue(AVPacket *pkt, std::atomic<bool> &quit);
     //清空队列
     void packetFlush();

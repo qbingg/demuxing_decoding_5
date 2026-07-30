@@ -9,7 +9,6 @@ MyPacketQueue::MyPacketQueue(QObject *parent)
 int MyPacketQueue::enqueue(AVPacket *pkt)
 {
     AVPacket *pkt1;
-    int ret = 0;
 
     pkt1 = av_packet_alloc();
     if (!pkt1) {
@@ -26,7 +25,7 @@ int MyPacketQueue::enqueue(AVPacket *pkt)
 
         cond.wakeOne(); // 队列不为空，可以唤醒一个因为cond.wait(&mutex, 500);阻塞的消费者了。
     }
-    return ret;
+    return 0;
 }
 
 int MyPacketQueue::dequeue(AVPacket *pkt, std::atomic<bool> &quit)
