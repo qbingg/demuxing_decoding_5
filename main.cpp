@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     SDL_Init(SDL_INIT_AUDIO);
 
     QLoggingCategory::setFilterRules(
-        "*.debug=true\n"            /* 保留 */
+        /// "*.debug=false\n"       /* 保留，注意：只能false关掉qDebug()，true会打印一堆Qt隐藏debug信息 */
         "log1.debug=true\n"         /* 低频通用打印 */
         );
 
