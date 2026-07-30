@@ -35,6 +35,12 @@ int MyPacketQueue::dequeue(AVPacket *pkt, std::atomic<bool> &quit)
         const QMutexLocker locker(&mutex); //加锁，锁不上就在这里阻塞着
 
         while (true) {
+            // 退出标记
+            if (quit) {
+                ret = -1;
+                break;
+            }
+
             if (!queue.isEmpty()) {
                 // 取队首packet
                 AVPacket *pkt1 = queue.dequeue();
@@ -48,12 +54,6 @@ int MyPacketQueue::dequeue(AVPacket *pkt, std::atomic<bool> &quit)
                 // 带500ms超时等待（完全对应SDL_CondWaitTimeout）
                 // wait返回false=超时，true=被唤醒
                 cond.wait(&mutex, 500);
-            }
-
-            // 退出标记
-            if (quit) {
-                ret = -1;
-                break;
             }
         }
     }
