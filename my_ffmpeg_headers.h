@@ -7,10 +7,11 @@
  * 3. 声明我自己封装的ffmpeg函数
  *
  * 规定：
- * 1. #include "my_ffmpeg_headers"只会在.cpp出现，不允许.h出现
+ * 1. #include "my_ffmpeg_headers.h"只会在.cpp出现，不允许.h出现
  * 2. 在.h中使用前向声明，如struct FFmpegPlayerCtx; struct AVFrame;
  */
 
+/** 1. 包含ffmpeg的头文件 */
 extern "C"{
 // demux_decode.c的头文件
 #include <libavutil/imgutils.h>
@@ -24,6 +25,18 @@ extern "C"{
 #include <libavutil/opt.h>
 #include <libswresample/swresample.h>
 }
+
+/** 2. FFmpegPlayerCtx */
+#include "MyPacketQueue.h"
+
+struct FFmpegPlayerCtx {
+
+};
+
+
+
+
+
 
 
 #endif // MY_FFMPEG_HEADERS_H
