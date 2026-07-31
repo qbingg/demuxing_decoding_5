@@ -16,6 +16,10 @@
  *      （简单地以用到 ret 为依据划分，涉及循环内判断，涉及FFmpeg/SDL等C库需要批量统一释放资源等情况，使用单一出口风格。）
  * 10. SDL3音频使用callback模式，未来项目在考虑pull模式（我需要循序渐进而不是一步到位）
  * 11. 无限循环业务顺序（如果项存在）：quit(stop)、pause、业务
+ * 12. 函数return和if风格统一，规定：使用int init(),if (init() < 0){非负即成功}，不看结果的用void
+ *      （ffmpeg-simple-player和SDL2使用的是int init(),if (init() != 0){非零即失败}）
+ *      （Qt和SDL3使用的是bool init(),f (!init()){true即成功}）
+ *      （我不想在风格上纠结太久，由于是播放器项目，那就风格参考ffplay.c吧，当然未来可考虑现代C++方案）
  */
 
 //TEST
