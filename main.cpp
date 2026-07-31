@@ -19,16 +19,6 @@
  */
 
 //TEST
-extern "C" {
-#include <libavutil/imgutils.h>
-#include <libavutil/samplefmt.h>
-#include <libavutil/timestamp.h>
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswscale/swscale.h>  // （视频）必须包含这个头文件
-#include <libavutil/opt.h>
-#include <libswresample/swresample.h>
-}
 #include <SDL3/SDL.h>
 
 int main(int argc, char *argv[])

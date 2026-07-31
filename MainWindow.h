@@ -4,6 +4,8 @@
 #include <QFileInfo>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QDragEnterEvent>
+#include <QMimeData>
 #include "MyDemuxThread.h"
 
 QT_BEGIN_NAMESPACE
@@ -22,6 +24,9 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+protected:
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dropEvent(QDropEvent *event);
 private slots:
     void on_btnPlay_clicked();
 
