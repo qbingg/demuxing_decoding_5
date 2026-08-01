@@ -65,3 +65,45 @@ int MyAudioDecodeThread::decode_packet(AVCodecContext *dec, const AVPacket *pkt,
 
     return ret;
 }
+
+void MyAudioDecodeThread::getAudioData(unsigned char *stream, int len)
+{
+    // decoder is not ready or in pause state, output silence
+    if (!is->audio_dec_ctx) {
+        memset(stream, 0, len);
+        return;
+    }
+
+    {
+        // 队内剩余Byte
+        int bytes = is->audio_buf_q.getSize();
+        // 换算成采样点sample，公式：Byte = ( sample * 采样点的位深 ) * 声道数
+        double channels = static_cast<double>(is->audio_tgt_channels);
+        double bytes_per_sample = av_get_bytes_per_sample(is->audio_tgt_fmt);
+        uint64_t samples = (bytes / channels) / bytes_per_sample;
+        // 换算成时间s，公式：s = 采样点 / 每秒采样次数sample_rate
+        double sample_rate = is->audio_tgt_freq;
+        double duration = samples / sample_rate;
+
+        // pts - 队内剩余Byte的时间 = 音频时钟
+        is->audio_clock = is->audio_enqueue_tail_clock - duration;
+        qCDebug(adec) << "ffmpeg-simple-player audio_clock:" << is->audio_clock;
+    }
+
+    int ret = is->audio_buf_q.dequeue(stream, len, m_stop,is->pause);
+    if (ret == -1) {
+        memset(stream, 0, len);
+        return;
+    }
+
+    {
+        double bytes_per_sample = av_get_bytes_per_sample(is->audio_tgt_fmt);
+
+        int16_t max, min;
+        myffut::pcmS16PeakBarDownSampling(reinterpret_cast<int16_t *>(stream),
+                                          len / bytes_per_sample,
+                                          max,
+                                          min);
+        emit sendpcmPeakBar(is->audio_clock, max, min);
+    }
+}
