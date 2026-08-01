@@ -1,17 +1,18 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QChart>
+#include <QChartView>
+#include <QDragEnterEvent>
 #include <QFileInfo>
+#include <QGraphicsLayout>
+#include <QLineSeries>
 #include <QMainWindow>
 #include <QMessageBox>
-#include <QDragEnterEvent>
 #include <QMimeData>
-#include <QChart>
-#include <QLineSeries>
-#include <QValueAxis>
-#include <QChartView>
-#include <QGraphicsLayout>
 #include <QTimer>
+#include <QValueAxis>
+#include "MyAudioDecodeThread.h"
 #include "MyDemuxThread.h"
 
 QT_BEGIN_NAMESPACE
@@ -50,6 +51,7 @@ private:
 
     MyDemuxThread *m_demuxThread = nullptr;
 
+    MyAudioDecodeThread *m_audioDecodeThread = nullptr;
 
     //进度条音频波形图
     QChart *m_durChart = nullptr;
@@ -57,6 +59,7 @@ private:
     QValueAxis *m_durAxisX = nullptr;
     QValueAxis *m_durAxisY = nullptr;
     QList<QPointF> m_durBarPoints;//sdl每次取水的min/max点：1024->2（降采样）
+    QTimer m_durTimer;// = nullptr;
 
 };
 #endif // MAINWINDOW_H

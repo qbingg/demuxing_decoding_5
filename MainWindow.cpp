@@ -42,12 +42,22 @@ int MainWindow::initPlayer()
         qDebug() << "DemuxThread init Failed.";
         return -1;
     }
+    m_audioDecodeThread = new MyAudioDecodeThread;
+    m_audioDecodeThread->setPlayerCtx(playerCtx);
 
     return 0;
 }
 
 void MainWindow::cleanPlayer()
 {
+    if(m_audioDecodeThread){
+        // m_audioDecodeThread->requestInterruption();
+        m_audioDecodeThread->stopThread();
+        m_audioDecodeThread->wait();
+        delete m_audioDecodeThread;
+        m_audioDecodeThread = nullptr;
+    }
+    qDebug()<<"已清空视频线程";
     if (m_demuxThread) {
         // m_demuxThread->requestInterruption();
         m_demuxThread->stopThread();
@@ -203,6 +213,47 @@ void MainWindow::on_btnPlay_clicked()
         idr->append(ptsSec, 32767);
         qCDebug(demux)<<"receive VideoPktIDR: "<<ptsSec;
     },Qt::QueuedConnection);
+    connect(m_audioDecodeThread,&MyAudioDecodeThread::sendpcmPeakBar,this,[=](double time,int16_t max,int16_t min){
+        m_durBarPoints.append(QPointF(time,max));
+        m_durBarPoints.append(QPointF(time,min));
+    },Qt::QueuedConnection);
+    connect(&m_durTimer,&QTimer::timeout,this,[=]{
+        // m_durWaveSeries->replace(m_durPoints);
+
+        //第一次采样：totalBars -> totalCbBars
+        //第二次采样：totalCbBars -> pixelBars
+
+        //目标柱状图数量
+        const int pixelBars = ui->durPcmChartView->width();
+        //总时长
+        const double duration = playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base);
+        //采样率（不是解码后的，而是swr后给sdl播放的）
+        const double sampleRate = playerCtx->audio_tgt_freq;//采样率（每秒采样次数）44100.0;
+        //总采样数
+        const double samples = duration * sampleRate;
+        //sdl callback总次数（取水次数）
+        const double totalCbBars = samples / 1024.0;
+        //第二次采样间隔
+        const int dspBarsInterval = totalCbBars / pixelBars;
+
+        QList<QPointF> pList;
+        // blockDownSampling(m_durPoints,pList,pixelBars);
+        // intervalDownSampling(m_durPoints,pList,dspBarsInterval);
+        myffut::durBarChartDownSampling(m_durBarPoints,totalCbBars,pList,ui->durPcmChartView->width());
+
+        m_durWaveSeries->replace(pList);
+
+        {
+            const QSignalBlocker blocker(ui->horizontalSlider);
+            // no signals here
+            //如果用户正在拖拽Slider，则不更新
+            if (!ui->horizontalSlider->isSliderDown())
+                ui->horizontalSlider->setValue(playerCtx->audio_clock);
+        }
+
+    });
+    m_durTimer.start(100);
 
     m_demuxThread->start();
+    m_audioDecodeThread->start();
 }
