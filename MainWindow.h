@@ -34,7 +34,8 @@ public:
     void cleanPlayer();
 
     void initDurPcmBarChart();
-    void cleanDurPcmBarChart();
+    void resetDurPcmBarChart();
+    void finiDurPcmBarChart();
 
 protected:
     void dragEnterEvent(QDragEnterEvent *event);
@@ -51,7 +52,7 @@ private:
 
 
     //进度条音频波形图
-    QChart *m_previousDurChart = nullptr;
+    QChart *m_durChart = nullptr;
     QLineSeries *m_durWaveSeries = nullptr;
     QValueAxis *m_durAxisX = nullptr;
     QValueAxis *m_durAxisY = nullptr;

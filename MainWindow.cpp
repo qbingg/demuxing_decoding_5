@@ -13,6 +13,8 @@ MainWindow::MainWindow(QWidget *parent)
     setAcceptDrops(true);// 开启对整个窗口的拖放操作的支持
 
     ui->btnPause->setCheckable(true);
+
+    initDurPcmBarChart();
 }
 
 MainWindow::~MainWindow()
@@ -69,32 +71,31 @@ void MainWindow::initDurPcmBarChart()
     m_durWaveSeries->setPen(QPen(QColor(0, 180, 255), 1)); // 浅蓝色线条
     m_durAxisX = new QValueAxis();
     m_durAxisX->setTitleText("时间 (s)");
-    m_durAxisX->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
+    // m_durAxisX->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
     m_durAxisY = new QValueAxis();
     m_durAxisY->setTitleText("采样值");
     m_durAxisY->setRange(-32768, 32767); // 16位有符号整数范围
 
-    QChart *chart = new QChart();
-    chart->addSeries(m_durWaveSeries);
-    chart->addAxis(m_durAxisX, Qt::AlignBottom);
-    chart->addAxis(m_durAxisY, Qt::AlignLeft);
+    m_durChart = new QChart();
+    m_durChart->addSeries(m_durWaveSeries);
+    m_durChart->addAxis(m_durAxisX, Qt::AlignBottom);
+    m_durChart->addAxis(m_durAxisY, Qt::AlignLeft);
 
     //波形数据使用这两个坐标轴映射
     m_durWaveSeries->attachAxis(m_durAxisX);
     m_durWaveSeries->attachAxis(m_durAxisY);
 
     // 显示到UI的QChartView控件（对象名：chartView）
-    m_previousDurChart = ui->durPcmChartView->chart();
-    ui->durPcmChartView->setChart(chart);
+    ui->durPcmChartView->setChart(m_durChart);
     ui->durPcmChartView->setRenderHint(QPainter::Antialiasing); // 抗锯齿
 
     /*为pcm图表显示进行布局优化*/
-    chart->setTitle("");//去掉标题
-    chart->legend()->hide();//隐藏图表用于解释颜色和系列名称的图例框
-    chart->layout()->setContentsMargins(0, 0, 0, 0);//去掉外层layout的margin间隔
-    chart->setMargins(QMargins(0, 0, 0, 0));//去掉chart内层的margin间隔
-    chart->setBackgroundRoundness(0);//去掉圆角（Qt文档：此属性表示图表背景四角处圆角的直径。）
-    chart->setAnimationOptions(QChart::NoAnimation); // 静态图关闭动画
+    m_durChart->setTitle("");//去掉标题
+    m_durChart->legend()->hide();//隐藏图表用于解释颜色和系列名称的图例框
+    m_durChart->layout()->setContentsMargins(0, 0, 0, 0);//去掉外层layout的margin间隔
+    m_durChart->setMargins(QMargins(0, 0, 0, 0));//去掉chart内层的margin间隔
+    m_durChart->setBackgroundRoundness(0);//去掉圆角（Qt文档：此属性表示图表背景四角处圆角的直径。）
+    m_durChart->setAnimationOptions(QChart::NoAnimation); // 静态图关闭动画
     // 去掉坐标轴标题
     m_durAxisX->setTitleVisible(false);
     m_durAxisY->setTitleVisible(false);
@@ -106,21 +107,45 @@ void MainWindow::initDurPcmBarChart()
     // m_durAxisY->setGridLineVisible(false);
 }
 
-void MainWindow::cleanDurPcmBarChart()
+void MainWindow::resetDurPcmBarChart()
 {
-    /* 清理：QChart *chart = new QChart();
-     * 1. 不需要剥离，让QChart统一管理series/axis的生命周期。
-     * （只有复用系列和坐标轴，避免被一同销毁，才需要剥离）
-     * 2. 删除旧 chart 即可，其他不要手动删，代码更少，出错点更少 */
-    if (m_previousDurChart) {
-        delete m_previousDurChart;
+    /* 清除chart旧视频的idrSeries
+     * 不建议：
+     * m_durChart->removeSeries(m_durWaveSeries);//releases the ownership
+     * m_durChart ->removeAllSeries();//Qt文档：Removes and deletes
+     * m_durChart->addSeries(m_durWaveSeries);
+     * 因为：Qt文档：A newly added series is not attached to any axes by default
+     *      （默认情况下，新添加的系列不会附加到任何轴上）
+     * 需要再次：
+     * m_durWaveSeries->attachAxis(m_durAxisX);
+     * m_durWaveSeries->attachAxis(m_durAxisY);
+     */
+    const auto seriesList = m_durChart->series();
+    for (QAbstractSeries *series : seriesList) {
+        if (series != m_durWaveSeries) {
+            m_durChart->removeSeries(series);
+            delete series;
+        }
     }
-    m_previousDurChart = nullptr;
-    m_durWaveSeries = nullptr;
-    m_durAxisX = nullptr;
-    m_durAxisY = nullptr;
-    //清空进度条list
+
+    //清屏（注意通过replace更新，并不存储数据）
+    m_durWaveSeries->clear();
+    //新视频的总时长
+    m_durAxisX->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
+    //清空进度条list（存储的旧视频数据）
     m_durBarPoints.clear();
+}
+
+void MainWindow::finiDurPcmBarChart()
+{
+    //do nothing
+
+    /* 1. m_durChart已经通过ui->durPcmChartView->setChart(m_durChart);接管
+     * 2. m_durWaveSeries已经通过m_durChart->addSeries(m_durWaveSeries);接管
+     * 3. m_durAxisX已经通过m_durChart->addAxis(m_durAxisX, Qt::AlignBottom);接管
+     * 4. m_durAxisY已经通过m_durChart->addAxis(m_durAxisY, Qt::AlignLeft);接管
+     * 5. m_durBarPoints不是指针对象，不需要管
+     */
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
@@ -160,11 +185,13 @@ void MainWindow::dropEvent(QDropEvent *event)
 void MainWindow::on_btnPlay_clicked()
 {
     // 四步：delete -> new -> connect -> start
-    cleanDurPcmBarChart();
     cleanPlayer();
 
-    initPlayer();
-    initDurPcmBarChart();
+    if (initPlayer() < 0) {
+        qDebug() << "initPlayer Failed.";
+        return;
+    }
+    resetDurPcmBarChart();
 
     connect(m_demuxThread,&MyDemuxThread::sendVideoPktIDR,this,[=](double ptsSec){
         QLineSeries *idr = new QLineSeries();
