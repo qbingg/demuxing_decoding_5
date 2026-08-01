@@ -24,6 +24,12 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    int initPlayer();
+    void cleanPlayer();
+
+    int initDurPcmBarChart();
+    void cleanDurPcmBarChart();
+
 protected:
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);

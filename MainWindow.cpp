@@ -20,28 +20,13 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_btnPlay_clicked()
+int MainWindow::initPlayer()
 {
-    if(m_demuxThread){
-        // m_demuxThread->requestInterruption();
-        m_demuxThread->stopThread();
-        m_demuxThread->wait();
-        m_demuxThread->finiDemuxThread();
-        delete m_demuxThread;
-        m_demuxThread = nullptr;
-    }
-    qDebug()<<"已清空解封装线程";
-    if(playerCtx){
-        delete playerCtx;
-        playerCtx = nullptr;
-    }
-    qDebug()<<"已清空playerCtx";
-
     // 检查文件是否存在
     QFileInfo fileInfo(windowTitle());
     if (!fileInfo.exists()) {
         QMessageBox::warning(this, "warning", "请拖入有效的文件");
-        return;
+        return -1;
     }
 
     /* 为新的视频文件初始化播放器结构体 */
@@ -52,11 +37,29 @@ void MainWindow::on_btnPlay_clicked()
     m_demuxThread = new MyDemuxThread;
     m_demuxThread->setPlayerCtx(playerCtx);
     if (m_demuxThread->initDemuxThread() != 0) {
-        qDebug()<< "DemuxThread init Failed.";
-        return;
+        qDebug() << "DemuxThread init Failed.";
+        return -1;
     }
 
-    m_demuxThread->start();
+    return 0;
+}
+
+void MainWindow::cleanPlayer()
+{
+    if (m_demuxThread) {
+        // m_demuxThread->requestInterruption();
+        m_demuxThread->stopThread();
+        m_demuxThread->wait();
+        m_demuxThread->finiDemuxThread();
+        delete m_demuxThread;
+        m_demuxThread = nullptr;
+    }
+    qDebug() << "已清空解封装线程";
+    if (playerCtx) {
+        delete playerCtx;
+        playerCtx = nullptr;
+    }
+    qDebug() << "已清空playerCtx";
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
@@ -91,4 +94,14 @@ void MainWindow::dropEvent(QDropEvent *event)
 
     //获取文件信息，并显示到标题栏上
     setWindowTitle(fileInfo.absoluteFilePath());
+}
+
+void MainWindow::on_btnPlay_clicked()
+{
+    cleanPlayer();
+
+    initPlayer();
+
+
+    m_demuxThread->start();
 }
