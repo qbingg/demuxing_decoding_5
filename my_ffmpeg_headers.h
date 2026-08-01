@@ -364,7 +364,7 @@ inline int intervalDownSampling(const QList<QPointF> &srcPointList,
 }
 
 //便利函数：音频波形图依据chart的width降采样
-int durBarChartDownSampling(const QList<QPointF> &srcPointList,
+inline int durBarChartDownSampling(const QList<QPointF> &srcPointList,
                             const int totalCbBars,
                             QList<QPointF> &dstPointList,
                             const int width)
