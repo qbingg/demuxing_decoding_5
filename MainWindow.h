@@ -51,6 +51,7 @@ private:
 
 
     //进度条音频波形图
+    QChart *m_previousDurChart = nullptr;
     QLineSeries *m_durWaveSeries = nullptr;
     QValueAxis *m_durAxisX = nullptr;
     QValueAxis *m_durAxisY = nullptr;

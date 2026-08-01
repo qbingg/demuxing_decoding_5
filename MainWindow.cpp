@@ -84,6 +84,7 @@ void MainWindow::initDurPcmBarChart()
     m_durWaveSeries->attachAxis(m_durAxisY);
 
     // 显示到UI的QChartView控件（对象名：chartView）
+    m_previousDurChart = ui->durPcmChartView->chart();
     ui->durPcmChartView->setChart(chart);
     ui->durPcmChartView->setRenderHint(QPainter::Antialiasing); // 抗锯齿
 
@@ -107,26 +108,19 @@ void MainWindow::initDurPcmBarChart()
 
 void MainWindow::cleanDurPcmBarChart()
 {
+    /* 清理：QChart *chart = new QChart();
+     * 1. 不需要剥离，让QChart统一管理series/axis的生命周期。
+     * （只有复用系列和坐标轴，避免被一同销毁，才需要剥离）
+     * 2. 删除旧 chart 即可，其他不要手动删，代码更少，出错点更少 */
+    if (m_previousDurChart) {
+        delete m_previousDurChart;
+    }
+    m_previousDurChart = nullptr;
+    m_durWaveSeries = nullptr;
+    m_durAxisX = nullptr;
+    m_durAxisY = nullptr;
     //清空进度条list
     m_durBarPoints.clear();
-
-    /* 清理：QChart *chart = new QChart();
-     * 1. 先剥离复用的系列和坐标轴，避免被一同销毁
-     * 2. 再删除旧 chart */
-    QChart* oldChart = ui->durPcmChartView->chart();
-    if (oldChart) {
-        // 先剥离复用的系列和坐标轴，避免被一同销毁
-        // oldChart->removeSeries(m_durWaveSeries);
-        // oldChart->removeAxis(m_durAxisX);
-        // oldChart->removeAxis(m_durAxisY);
-        // 再删除旧 chart
-        delete oldChart;
-    }
-    m_durWaveSeries->count();
-    m_durAxisX->max();
-    m_durAxisY->max();
-    qDebug()<<"m_durAxisX："<<m_durAxisX;
-
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
