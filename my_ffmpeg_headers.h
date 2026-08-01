@@ -38,6 +38,9 @@ extern "C"{
 #define MAX_AUDIOQ_SIZE (5 * 16 * 1024)
 // 5 * 256 KByte
 #define MAX_VIDEOQ_SIZE (5 * 256 * 1024)
+// 192000 Byte（48000采样率*2声道*2位深，即1秒的数据）
+#define MAX_AUDIO_FRAME_SIZE 192000
+#define MAX_AUDIO_BUF_Q_SIZE ((MAX_AUDIO_FRAME_SIZE * 3) / 2)
 
 struct FFmpegPlayerCtx {
     /* 解封装 */
