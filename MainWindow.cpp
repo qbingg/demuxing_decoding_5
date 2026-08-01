@@ -113,6 +113,19 @@ void MainWindow::cleanDurPcmBarChart()
     /* 清理：QChart *chart = new QChart();
      * 1. 先剥离复用的系列和坐标轴，避免被一同销毁
      * 2. 再删除旧 chart */
+    QChart* oldChart = ui->durPcmChartView->chart();
+    if (oldChart) {
+        // 先剥离复用的系列和坐标轴，避免被一同销毁
+        // oldChart->removeSeries(m_durWaveSeries);
+        // oldChart->removeAxis(m_durAxisX);
+        // oldChart->removeAxis(m_durAxisY);
+        // 再删除旧 chart
+        delete oldChart;
+    }
+    m_durWaveSeries->count();
+    m_durAxisX->max();
+    m_durAxisY->max();
+    qDebug()<<"m_durAxisX："<<m_durAxisX;
 
 }
 

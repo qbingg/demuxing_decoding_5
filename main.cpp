@@ -20,6 +20,8 @@
  *      （ffmpeg-simple-player和SDL2使用的是int init(),if (init() != 0){非零即失败}）
  *      （Qt和SDL3使用的是bool init(),f (!init()){true即成功}）
  *      （我不想在风格上纠结太久，由于是播放器项目，那就风格参考ffplay.c吧，当然未来可考虑现代C++方案）
+ * 13. QChart每次重播都new新的chart，与FFmpegPlayerCtx心智模型一致：init、clean
+ *      （业界更倾向于复用为m_chart，未来可考虑只清空lineseries数据方案：init、reset，fini）
  */
 
 //TEST
