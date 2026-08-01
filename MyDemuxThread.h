@@ -55,8 +55,8 @@ public:
 
 signals:
     void sendMessage();
-    void sendAudioPktIDR(double pts);
-    void sendVideoPktIDR(double pts);
+    void sendAudioPktIDR(double ptsSec);
+    void sendVideoPktIDR(double ptsSec);
 
 private:
     FFmpegPlayerCtx *is = nullptr;

@@ -6,6 +6,12 @@
 #include <QMessageBox>
 #include <QDragEnterEvent>
 #include <QMimeData>
+#include <QChart>
+#include <QLineSeries>
+#include <QValueAxis>
+#include <QChartView>
+#include <QGraphicsLayout>
+#include <QTimer>
 #include "MyDemuxThread.h"
 
 QT_BEGIN_NAMESPACE
@@ -27,7 +33,7 @@ public:
     int initPlayer();
     void cleanPlayer();
 
-    int initDurPcmBarChart();
+    void initDurPcmBarChart();
     void cleanDurPcmBarChart();
 
 protected:
@@ -42,5 +48,13 @@ private:
     FFmpegPlayerCtx *playerCtx = nullptr;
 
     MyDemuxThread *m_demuxThread = nullptr;
+
+
+    //进度条音频波形图
+    QLineSeries *m_durWaveSeries = nullptr;
+    QValueAxis *m_durAxisX = nullptr;
+    QValueAxis *m_durAxisY = nullptr;
+    QList<QPointF> m_durBarPoints;//sdl每次取水的min/max点：1024->2（降采样）
+
 };
 #endif // MAINWINDOW_H

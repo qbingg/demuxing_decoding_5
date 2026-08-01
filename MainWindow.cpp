@@ -62,6 +62,60 @@ void MainWindow::cleanPlayer()
     qDebug() << "已清空playerCtx";
 }
 
+void MainWindow::initDurPcmBarChart()
+{
+    m_durWaveSeries = new QLineSeries();
+    m_durWaveSeries->setName("分块峰值降采样法");
+    m_durWaveSeries->setPen(QPen(QColor(0, 180, 255), 1)); // 浅蓝色线条
+    m_durAxisX = new QValueAxis();
+    m_durAxisX->setTitleText("时间 (s)");
+    m_durAxisX->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
+    m_durAxisY = new QValueAxis();
+    m_durAxisY->setTitleText("采样值");
+    m_durAxisY->setRange(-32768, 32767); // 16位有符号整数范围
+
+    QChart *chart = new QChart();
+    chart->addSeries(m_durWaveSeries);
+    chart->addAxis(m_durAxisX, Qt::AlignBottom);
+    chart->addAxis(m_durAxisY, Qt::AlignLeft);
+
+    //波形数据使用这两个坐标轴映射
+    m_durWaveSeries->attachAxis(m_durAxisX);
+    m_durWaveSeries->attachAxis(m_durAxisY);
+
+    // 显示到UI的QChartView控件（对象名：chartView）
+    ui->durPcmChartView->setChart(chart);
+    ui->durPcmChartView->setRenderHint(QPainter::Antialiasing); // 抗锯齿
+
+    /*为pcm图表显示进行布局优化*/
+    chart->setTitle("");//去掉标题
+    chart->legend()->hide();//隐藏图表用于解释颜色和系列名称的图例框
+    chart->layout()->setContentsMargins(0, 0, 0, 0);//去掉外层layout的margin间隔
+    chart->setMargins(QMargins(0, 0, 0, 0));//去掉chart内层的margin间隔
+    chart->setBackgroundRoundness(0);//去掉圆角（Qt文档：此属性表示图表背景四角处圆角的直径。）
+    chart->setAnimationOptions(QChart::NoAnimation); // 静态图关闭动画
+    // 去掉坐标轴标题
+    m_durAxisX->setTitleVisible(false);
+    m_durAxisY->setTitleVisible(false);
+    // 去掉坐标轴刻度
+    // m_durAxisX->setLabelsVisible(false);
+    m_durAxisY->setLabelsVisible(false);
+    // // 去掉坐标轴网格
+    // m_durAxisX->setGridLineVisible(false);
+    // m_durAxisY->setGridLineVisible(false);
+}
+
+void MainWindow::cleanDurPcmBarChart()
+{
+    //清空进度条list
+    m_durBarPoints.clear();
+
+    /* 清理：QChart *chart = new QChart();
+     * 1. 先剥离复用的系列和坐标轴，避免被一同销毁
+     * 2. 再删除旧 chart */
+
+}
+
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
     if (event->mimeData()->hasUrls())
@@ -98,10 +152,23 @@ void MainWindow::dropEvent(QDropEvent *event)
 
 void MainWindow::on_btnPlay_clicked()
 {
+    // 四步：delete -> new -> connect -> start
+    cleanDurPcmBarChart();
     cleanPlayer();
 
     initPlayer();
+    initDurPcmBarChart();
 
+    connect(m_demuxThread,&MyDemuxThread::sendVideoPktIDR,this,[=](double ptsSec){
+        QLineSeries *idr = new QLineSeries();
+        idr->setPen(QPen(Qt::black, 1));
+        ui->durPcmChartView->chart()->addSeries(idr);
+        idr->attachAxis(m_durAxisX);
+        idr->attachAxis(m_durAxisY);
+        idr->append(ptsSec, -32768);
+        idr->append(ptsSec, 32767);
+        qCDebug(demux)<<"receive VideoPktIDR: "<<ptsSec;
+    },Qt::QueuedConnection);
 
     m_demuxThread->start();
 }
