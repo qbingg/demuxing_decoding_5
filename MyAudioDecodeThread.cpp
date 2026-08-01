@@ -107,3 +107,13 @@ void MyAudioDecodeThread::getAudioData(unsigned char *stream, int len)
         emit sendpcmPeakBar(is->audio_clock, max, min);
     }
 }
+
+void MyAudioDecodeThread::setPlayerCtx(FFmpegPlayerCtx *ctx)
+{
+    is = ctx;
+}
+
+void MyAudioDecodeThread::stopThread()
+{
+    m_stop = 1;
+}

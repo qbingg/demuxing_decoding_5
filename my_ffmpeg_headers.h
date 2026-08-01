@@ -28,6 +28,7 @@ extern "C"{
 
 /** 2. FFmpegPlayerCtx */
 #include <QFileInfo>
+#include <SDL3/SDL_audio.h>
 #include "MyAudioBufQueue.h"
 #include "MyPacketQueue.h"
 
@@ -55,6 +56,21 @@ struct FFmpegPlayerCtx {
 
     /* 音频解码 */
     MyAudioBufQueue audio_buf_q;
+    // 约定：SDL照着这些格式初始化，ffmpeg经过sws转为这些格式
+    int audio_tgt_freq = 48000;
+    AVSampleFormat audio_tgt_fmt = AV_SAMPLE_FMT_S16;
+    SDL_AudioFormat audio_tgt_sdl_fmt = SDL_AUDIO_S16;//AUDIO_S16SYS;
+    int audio_tgt_channels = 2;
+
+    //这就和 ffmpeg-simple-player 的核心思想一致：用已入队音频末尾时间，减去队列里还没播放的音频时长。
+    std::atomic<double> audio_enqueue_tail_clock = 0;//解码frame.pts + frame的PCM播放持续时间
+    std::atomic<double> audio_clock = 0;
+
+    /* 暂停功能：只需要暂停消费端，生产端不需要控制
+     * 1、暂停音频播放设备：SDL_PauseAudio(0);//跟OpenGL一样是状态机，可全局调用
+     * 2、暂停视频解码：if(is->pause) {msleep(10);continue;}
+     */
+    std::atomic<bool> pause = false;
 
 };
 
