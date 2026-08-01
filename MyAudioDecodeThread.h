@@ -30,6 +30,8 @@ public:
 
     void getAudioData(unsigned char *stream, int len);
 
+    double getBytesToSamples() const;
+
 signals:
     void sendMessage();
     void sendpcmPeakBar(double,int16_t,int16_t);

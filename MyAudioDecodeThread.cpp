@@ -3,6 +3,60 @@
 #include "log.h"
 #include "my_ffmpeg_headers.h"
 
+/* this function will be called (usually in a background thread) when the audio stream is consuming data. */
+/* 当音频流消耗数据时，该函数会被调用（通常运行在后台线程中） */
+static void SDLCALL FeedTheAudioStreamMore(void *userdata, SDL_AudioStream *astream, int additional_amount, int total_amount)
+{
+    /* total_amount is how much data the audio stream is eating right now, additional_amount is how much more it needs
+       than what it currently has queued (which might be zero!). You can supply any amount of data here; it will take what
+       it needs and use the extra later. If you don't give it enough, it will take everything and then feed silence to the
+       hardware for the rest. Ideally, though, we always give it what it needs and no extra, so we aren't buffering more
+       than necessary. */
+    /*
+       total_amount：音频流本轮总共要消耗的数据量
+       additional_amount：除了当前已排队的数据（可能为0）之外，还需要补充的数据量
+
+       你可以在这里传入任意体量的数据：流会先取走当下需要的部分，多余的数据会缓存起来留待后续使用。
+       如果提供的数据不足，流会先把所有数据用完，剩余的缺口会向音频硬件输出静音来填充。
+       不过理想状态下，我们只提供刚好满足需求的数据、不多给，避免产生不必要的缓冲冗余。*/
+    MyAudioDecodeThread *adt = reinterpret_cast<MyAudioDecodeThread *>(userdata);
+    int len = additional_amount;
+    additional_amount /= (adt->getBytesToSamples());  /* convert from bytes to samples *//* 将单位从字节转换为采样点数 */
+
+    if (additional_amount > 0){
+        QByteArray samples;
+        samples.reserve(len);
+        adt->getAudioData((unsigned char *)samples.data(),len);
+        SDL_PutAudioStreamData(astream, samples.data(), len);
+    }
+
+    // //示例数据格式：audio in as mono, float32 data at 8000Hz.
+    // additional_amount /= sizeof (float);  /* convert from bytes to samples *//* 将单位从字节转换为采样点数 */
+    // while (additional_amount > 0) {
+    //     float samples[128];  /* this will feed 128 samples each iteration until we have enough. *//* 每次循环生成128个采样点，循环直到补足所需数据量 */
+    //     const int total = SDL_min(additional_amount, SDL_arraysize(samples));
+    //     int i;
+    //
+    //     /* generate a 440Hz pure tone */
+    //     /* 生成440Hz的正弦纯音 */
+    //     for (i = 0; i < total; i++) {
+    //         const int freq = 440;
+    //         const float phase = current_sine_sample * freq / 8000.0f;
+    //         samples[i] = SDL_sinf(phase * 2 * SDL_PI_F);
+    //         current_sine_sample++;
+    //     }
+    //
+    //     /* wrapping around to avoid floating-point errors */
+    //     /* 对采样计数取模回绕，避免数值持续增大导致浮点计算出现误差 */
+    //     current_sine_sample %= 8000;
+    //
+    //     /* feed the new data to the stream. It will queue at the end, and trickle out as the hardware needs more data. */
+    //     /* 将新生成的数据送入音频流。数据会在流的末尾排队，随着硬件的需求逐步输出 */
+    //     SDL_PutAudioStreamData(astream, samples, total * sizeof (float));
+    //     additional_amount -= total;  /* subtract what we've just fed the stream. *//* 减去本次已填充的采样数 */
+    // }
+}
+
 MyAudioDecodeThread::MyAudioDecodeThread(QObject *parent)
     : QThread(parent)
 {}
@@ -106,6 +160,11 @@ void MyAudioDecodeThread::getAudioData(unsigned char *stream, int len)
                                           min);
         emit sendpcmPeakBar(is->audio_clock, max, min);
     }
+}
+
+double MyAudioDecodeThread::getBytesToSamples() const
+{
+    return av_get_bytes_per_sample(is->audio_tgt_fmt);
 }
 
 void MyAudioDecodeThread::setPlayerCtx(FFmpegPlayerCtx *ctx)
