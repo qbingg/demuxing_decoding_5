@@ -117,3 +117,107 @@ void MyAudioDecodeThread::stopThread()
 {
     m_stop = 1;
 }
+
+void MyAudioDecodeThread::run()
+{
+    int ret = 0;
+
+    if(!is){
+        qDebug() << "音频解码线程的is为空";
+        return;
+    }
+    if (is->video_stream)
+        qDebug() << "Decoding audio from file '" << is->iFile;
+
+    AVFrame *frame = NULL;
+    AVPacket *pkt = NULL;
+    frame = av_frame_alloc();
+    if (!frame) {
+        qDebug() << "Could not allocate frame";
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        qDebug() << "Could not allocate packet";
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    /* SDL初始化*/
+    SDL_AudioSpec spec;
+    //SDL initialize
+    if (!SDL_Init(SDL_INIT_AUDIO))    // 支持AUDIO
+    {
+        fprintf(stderr, "Could not initialize SDL - %s\n", SDL_GetError());
+        return;
+    }
+    // 音频参数设置SDL_AudioSpec
+    // spec.freq = is->audio_dec_ctx->sample_rate;// 采样频率48000
+    // spec.format = AUDIO_F32SYS; // 采样点格式 AUDIO_S16SYS
+    // spec.channels = 1; //is->audio_dec_ctx->ch_layout.nb_channels;// 2通道
+    // spec.silence = 0;
+    // spec.samples = 1024;// 23.2ms -> 46.4ms 每次读取的采样数量，多久产生一次回调和 samples
+    // spec.callback = FN_Audio_Cb; // 回调函数
+    // spec.userdata = this;
+    spec.freq = is->audio_tgt_freq;
+    spec.format = is->audio_tgt_sdl_fmt;
+    spec.channels = is->audio_tgt_channels;
+    // spec.silence = 0;
+    // spec.samples = 1024;// 23.2ms -> 46.4ms 每次读取的采样数量，多久产生一次回调和 samples
+    // spec.callback = FN_Audio_Cb; // 回调函数
+    // spec.userdata = this;
+
+    //打开音频设备
+    is->sdl_audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, FeedTheAudioStreamMore, this);//NULL);
+    if (!is->sdl_audio_stream) {
+        SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
+        goto _FAIL;
+    }
+    /* SDL_OpenAudioDeviceStream starts the device paused. You have to tell it to start! */
+    SDL_ResumeAudioStreamDevice(is->sdl_audio_stream);
+
+    while (true) {
+
+        if(m_stop)
+            break;
+
+        //seek后，刷新dec_ctx解码上下文，音频解码线程还得单独清理PCM buf队列
+        if (is->flush_actx) {
+            is->flush_actx = false;
+            qCDebug(logSeek) << "音频解码线程：seek后，刷新dec_ctx解码上下文";
+            avcodec_flush_buffers(is->audio_dec_ctx);
+            //清理PCM buf队列，不然1~2秒后才会播放seek的音频
+            is->audio_buf_q.bufFlush();
+            continue;
+        }
+
+        // 检查audio_buf队列的数量
+        if(is->audio_buf_q.getSize() > MAX_AUDIO_BUF_Q_SIZE){
+            msleep(10);// SDL_Delay(10);
+            continue;
+        }
+
+        //尝试从队列获取一个包（阻塞）
+        if(is->audioq.dequeue(pkt,m_stop) < 0){
+            qDebug() << "解码线程：获取包失败。";
+            break;
+        }
+
+        ret = decode_packet(is->audio_dec_ctx, pkt ,frame);
+        av_packet_unref(pkt);
+        if (ret < 0)
+            break;
+        qDebug()<<"解码线程：完成消费：pkt_size :"<<is->videoq.getSize();
+        qCDebug(logSDL3)<<"SDL_GetAudioStreamQueued():"<<SDL_GetAudioStreamQueued(stream);
+    }
+_FAIL:
+    //release some resources
+    // 关闭音频设备
+    // SDL_CloseAudio();
+    //quit SDL
+    SDL_Quit();
+end:
+    av_frame_free(&frame);
+    av_packet_free(&pkt);
+}

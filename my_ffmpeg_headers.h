@@ -72,6 +72,8 @@ struct FFmpegPlayerCtx {
      */
     std::atomic<bool> pause = false;
 
+    //SDL3音频播放设备流
+    SDL_AudioStream *sdl_audio_stream = NULL;
 };
 
 /** 3. 声明我自己封装的ffmpeg函数 */
