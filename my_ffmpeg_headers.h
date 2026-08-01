@@ -245,6 +245,141 @@ inline int frame_to_yuv420planes(AVFrame *src,
     return 0;
 }
 
+//第一次降采样函数
+inline int pcmS16PeakBarDownSampling(int16_t *src,const int srcLen,int16_t &dstMax,int16_t &dstMin)
+{
+    //求采样点集的最大最小值，无论是LRLRLR,LLLRRR,LLLLLL
+
+    if (!src || srcLen <= 0)
+        return -1;
+
+    int16_t maxVal = std::numeric_limits<int16_t>::min();//-32768 获取 qint16 类型能表示的最小值。
+    int16_t minVal = std::numeric_limits<int16_t>::max();// 32767 获取 qint16 类型能表示的最大值。
+
+    for (int i = 0; i < srcLen; ++i) {
+        maxVal = qMax(maxVal, src[i]);
+        minVal = qMin(minVal, src[i]);
+    }
+
+    dstMax = maxVal;
+    dstMin = minVal;
+
+    return 0;
+}
+
+//第二次降采样函数：分块峰值降采样
+inline int blockDownSampling(const QList<QPointF> &srcPointList,
+                             QList<QPointF> &dstPointList,
+                             const int dstBars)
+{
+    //分块峰值降采样
+    //目标柱状图数量 dstBars
+    //目标输出点的数量（一个bar对应2个点min/max）
+    // const int dstPoints = dstBars * 2;
+
+    dstPointList.clear();
+
+    const int totalBars = srcPointList.size() / 2;
+    if (totalBars <= 0 || dstBars <= 0)
+        return -1;
+
+    //src太少，直接返回即可
+    if (totalBars <= dstBars) {
+        dstPointList = srcPointList;
+        return 0;
+    }
+
+    const int blocks = dstBars; //块数 ==  柱状图数
+    //分块
+    for (int block = 0; block < blocks; ++block) {
+        int startBar = block * totalBars / blocks;
+        int endBar = (block + 1) * totalBars / blocks;
+
+        if (startBar >= endBar)
+            continue;
+
+        qreal maxVal = std::numeric_limits<qreal>::lowest();
+        qreal minVal = std::numeric_limits<qreal>::max();
+        for (int bar = startBar; bar < endBar; ++bar) {
+            const QPointF &p0 = srcPointList[bar * 2];
+            const QPointF &p1 = srcPointList[bar * 2 + 1];
+            maxVal = qMax(maxVal, qMax(p0.y(), p1.y()));
+            minVal = qMin(minVal, qMin(p0.y(), p1.y()));
+        }
+        //时间取块的中间值
+        qreal x = (srcPointList[startBar * 2].x() + srcPointList[(endBar - 1) * 2 + 1].x()) / 2.0;
+
+        dstPointList.append(QPointF(x, maxVal));
+        dstPointList.append(QPointF(x, minVal));
+    }
+    return 0;
+}
+
+//第二次降采样函数：等间隔峰值降采样
+inline int intervalDownSampling(const QList<QPointF> &srcPointList,
+                                QList<QPointF> &dstPointList,
+                                const int dstBarInterval)
+{
+    //等间隔峰值降采样
+    //从srcBar里按BarInterval的大小，分成若干块，在从块里峰值降采样得到dstBar
+    //目标输出点的数量（一个bar对应2个点min/max）
+
+    dstPointList.clear();
+
+    const int totalBars = srcPointList.size() / 2;
+    if (totalBars <= 0 || dstBarInterval <= 0)
+        return -1;
+
+    //间隔为1，直接返回即可
+    if (dstBarInterval == 1) {
+        dstPointList = srcPointList;
+        return 0;
+    }
+
+    // const int blocks = (totalBars + dstBarInterval - 1) / dstBarInterval;//如果想向上取整，不能简单blocks整除 +1。
+    //不按 bar 分块，而是按照dstBarInterval固定间隔一刀一刀地切
+    for (int startBar = 0; startBar < totalBars; startBar += dstBarInterval) {
+        // int startBar = block * totalBars / blocks;
+        // int endBar = (block + 1) * totalBars / blocks;
+        int endBar = qMin(startBar + dstBarInterval, totalBars);
+
+        qreal maxVal = std::numeric_limits<qreal>::lowest();
+        qreal minVal = std::numeric_limits<qreal>::max();
+        for (int bar = startBar; bar < endBar; ++bar) {
+            const QPointF &p0 = srcPointList[bar * 2];
+            const QPointF &p1 = srcPointList[bar * 2 + 1];
+            maxVal = qMax(maxVal, qMax(p0.y(), p1.y()));
+            minVal = qMin(minVal, qMin(p0.y(), p1.y()));
+        }
+        //时间取块的中间值
+        qreal x = (srcPointList[startBar * 2].x() + srcPointList[(endBar - 1) * 2 + 1].x()) / 2.0;
+        dstPointList.append(QPointF(x, maxVal));
+        dstPointList.append(QPointF(x, minVal));
+    }
+    return 0;
+}
+
+//便利函数：音频波形图依据chart的width降采样
+int durBarChartDownSampling(const QList<QPointF> &srcPointList,
+                            const int totalCbBars,
+                            QList<QPointF> &dstPointList,
+                            const int width)
+{
+    //降采样：totalCbBars -> pixelBars
+    //目标柱状图数量
+    const int pixelBars = width;
+
+    const int barInterval = totalCbBars / pixelBars;
+    if (barInterval == 0) {
+        dstPointList = srcPointList;
+        qDebug() << "src.size太小了，除数为0，无需降采样";
+        return 0;
+    }
+
+    return intervalDownSampling(srcPointList, dstPointList, barInterval);
+}
+
+
 
 }
 
