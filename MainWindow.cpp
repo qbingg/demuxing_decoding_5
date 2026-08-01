@@ -38,7 +38,7 @@ int MainWindow::initPlayer()
     // 初始化解封装线程
     m_demuxThread = new MyDemuxThread;
     m_demuxThread->setPlayerCtx(playerCtx);
-    if (m_demuxThread->initDemuxThread() != 0) {
+    if (m_demuxThread->initDemuxThread() < 0) {
         qDebug() << "DemuxThread init Failed.";
         return -1;
     }

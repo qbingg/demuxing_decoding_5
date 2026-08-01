@@ -28,6 +28,7 @@ extern "C"{
 
 /** 2. FFmpegPlayerCtx */
 #include <QFileInfo>
+#include "MyAudioBufQueue.h"
 #include "MyPacketQueue.h"
 
 /* 解封装线程宏 */
@@ -51,6 +52,9 @@ struct FFmpegPlayerCtx {
     AVCodecContext *audio_dec_ctx = NULL;
     AVStream *audio_stream = NULL;
     MyPacketQueue audioq;
+
+    /* 音频解码 */
+    MyAudioBufQueue audio_buf_q;
 
 };
 
