@@ -274,3 +274,29 @@ void MainWindow::on_btnPlay_clicked()
     m_audioDecodeThread->start();
     m_videoDecodeThread->start();
 }
+
+void MainWindow::on_btnPause_clicked(bool checked)
+{
+    if (!playerCtx && !playerCtx->sdl_audio_stream) {
+        ui->btnPause->setChecked(false);
+        return;
+    }
+
+    if(checked){
+        ui->btnPause->setText("继续");
+
+        playerCtx->pause = true;
+        // SDL_PauseAudio(1);
+        SDL_PauseAudioStreamDevice(playerCtx->sdl_audio_stream);
+
+
+    }else{
+        ui->btnPause->setText("暂停");
+
+        playerCtx->pause = false;
+        // SDL_PauseAudio(0);
+        SDL_ResumeAudioStreamDevice(playerCtx->sdl_audio_stream);
+    }
+
+    qDebug() << "playerCtx->pause: " << playerCtx->pause;
+}

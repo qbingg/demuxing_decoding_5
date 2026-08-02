@@ -45,6 +45,8 @@ protected:
 private slots:
     void on_btnPlay_clicked();
 
+    void on_btnPause_clicked(bool checked);
+
 private:
     Ui::MainWindow *ui;
 
