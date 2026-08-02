@@ -154,6 +154,7 @@ void MainWindow::resetDurPcmBarChart()
     m_durWaveSeries->clear();
     //新视频的总时长
     m_durAxisX->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
+    ui->horizontalSlider->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
     //清空进度条list（存储的旧视频数据）
     m_durBarPoints.clear();
 
@@ -184,6 +185,29 @@ void MainWindow::finiDurPcmBarChart()
         delete m_durTimer;
         m_durTimer = nullptr;
     }
+}
+
+void MainWindow::seekRelative(double offsetSec)
+{
+    double targetSec = playerCtx->audio_clock + offsetSec;
+    //边界检查 0 <= targetSec <= durationSec
+    double durationSec = (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base)); // 时长 0~duration(音频流)，注意要考虑时间基
+    targetSec = qBound(0.0, targetSec, durationSec);
+
+    qDebug() << "seekRelative to:" << targetSec << "audio_clock:" << playerCtx->audio_clock;
+
+    myffut::stream_seek(playerCtx,targetSec);
+}
+
+void MainWindow::seekAbsolute(double targetSec)
+{
+    //边界检查 0 <= targetSec <= durationSec
+    double durationSec = (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base)); // 时长 0~duration(音频流)，注意要考虑时间基
+    targetSec = qBound(0.0, targetSec, durationSec);
+
+    qDebug() << "seekAbsolute to:" << targetSec << "audio_clock:" << playerCtx->audio_clock;
+
+    myffut::stream_seek(playerCtx,targetSec);
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
@@ -230,7 +254,6 @@ void MainWindow::on_btnPlay_clicked()
         return;
     }
     resetDurPcmBarChart();
-    ui->horizontalSlider->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
 
     connect(m_demuxThread,&MyDemuxThread::sendVideoPktIDR,this,[=](double ptsSec){
         QLineSeries *idr = new QLineSeries();
@@ -317,4 +340,28 @@ void MainWindow::on_btnPause_clicked(bool checked)
     }
 
     qDebug() << "playerCtx->pause: " << playerCtx->pause;
+}
+
+void MainWindow::on_btnRewind_clicked()
+{
+    if (!playerCtx)
+        return;
+
+    seekRelative(-10);
+}
+
+void MainWindow::on_btnForward_clicked()
+{
+    if (!playerCtx)
+        return;
+
+    seekRelative(+10);
+}
+
+void MainWindow::on_horizontalSlider_sliderReleased()
+{
+    if (!playerCtx)
+        return;
+
+    seekAbsolute(ui->horizontalSlider->value());
 }
