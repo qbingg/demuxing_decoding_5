@@ -64,7 +64,7 @@ private:
     QValueAxis *m_durAxisX = nullptr;
     QValueAxis *m_durAxisY = nullptr;
     QList<QPointF> m_durBarPoints;//sdl每次取水的min/max点：1024->2（降采样）
-    QTimer m_durTimer;// = nullptr;
+    QTimer *m_durTimer = nullptr;
 
 };
 #endif // MAINWINDOW_H

@@ -20,6 +20,8 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+
+    finiDurPcmBarChart();
 }
 
 int MainWindow::initPlayer()
@@ -154,18 +156,34 @@ void MainWindow::resetDurPcmBarChart()
     m_durAxisX->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
     //清空进度条list（存储的旧视频数据）
     m_durBarPoints.clear();
+
+    /*重置Timer
+     * 方法1. delete旧视频的Timer
+     * 方法2. disconnect比较麻烦不直观
+     */
+    if(m_durTimer){
+        m_durTimer->stop();
+        delete m_durTimer;
+        m_durTimer = nullptr;
+    }
+    m_durTimer = new QTimer();
 }
 
 void MainWindow::finiDurPcmBarChart()
 {
-    //do nothing
-
     /* 1. m_durChart已经通过ui->durPcmChartView->setChart(m_durChart);接管
      * 2. m_durWaveSeries已经通过m_durChart->addSeries(m_durWaveSeries);接管
      * 3. m_durAxisX已经通过m_durChart->addAxis(m_durAxisX, Qt::AlignBottom);接管
      * 4. m_durAxisY已经通过m_durChart->addAxis(m_durAxisY, Qt::AlignLeft);接管
      * 5. m_durBarPoints不是指针对象，不需要管
      */
+
+    // 如果是new QTimer(this);有父对象，则不需要此步
+    if(m_durTimer){
+        m_durTimer->stop();
+        delete m_durTimer;
+        m_durTimer = nullptr;
+    }
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
@@ -228,7 +246,7 @@ void MainWindow::on_btnPlay_clicked()
         m_durBarPoints.append(QPointF(time,max));
         m_durBarPoints.append(QPointF(time,min));
     },Qt::QueuedConnection);
-    connect(&m_durTimer,&QTimer::timeout,this,[=]{
+    connect(m_durTimer,&QTimer::timeout,this,[=]{
         // m_durWaveSeries->replace(m_durPoints);
 
         //第一次采样：totalBars -> totalCbBars
@@ -263,7 +281,7 @@ void MainWindow::on_btnPlay_clicked()
         }
 
     });
-    m_durTimer.start(100);
+    m_durTimer->start(100);
     connect(m_videoDecodeThread,
             &MyVideoDecodeThread::sendYuv420pFrame,
             ui->widget,
