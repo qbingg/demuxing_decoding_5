@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout" stretch="3,1,0,0">
     <item>
-     <widget class="QWidget" name="widget" native="true"/>
+     <widget class="MyYUV420POpenGLWidget" name="widget" native="true"/>
     </item>
     <item>
      <widget class="QChartView" name="durPcmChartView" native="true"/>
@@ -105,6 +105,12 @@
    <class>QChartView</class>
    <extends>QWidget</extends>
    <header>QChartView.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MyYUV420POpenGLWidget</class>
+   <extends>QWidget</extends>
+   <header>MyYUV420POpenGLWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

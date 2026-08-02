@@ -212,6 +212,7 @@ void MainWindow::on_btnPlay_clicked()
         return;
     }
     resetDurPcmBarChart();
+    ui->horizontalSlider->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
 
     connect(m_demuxThread,&MyDemuxThread::sendVideoPktIDR,this,[=](double ptsSec){
         QLineSeries *idr = new QLineSeries();
@@ -263,6 +264,11 @@ void MainWindow::on_btnPlay_clicked()
 
     });
     m_durTimer.start(100);
+    connect(m_videoDecodeThread,
+            &MyVideoDecodeThread::sendYuv420pFrame,
+            ui->widget,
+            &MyYUV420POpenGLWidget::setYuv420pFrame,
+            Qt::QueuedConnection);
 
     m_demuxThread->start();
     m_audioDecodeThread->start();
