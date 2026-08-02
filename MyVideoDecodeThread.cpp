@@ -80,3 +80,65 @@ int MyVideoDecodeThread::decode_packet(AVCodecContext *dec, const AVPacket *pkt,
 
     return ret;
 }
+
+void MyVideoDecodeThread::run()
+{
+    int ret = 0;
+
+    if(!is){
+        qDebug() << "解码线程的is为空";
+        return;
+    }
+    if (is->video_stream)
+        qDebug() << "Decoding video from file '" << is->iFile;
+
+    AVFrame *frame = NULL;
+    AVPacket *pkt = NULL;
+    frame = av_frame_alloc();
+    if (!frame) {
+        qDebug() << "Could not allocate frame";
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+    pkt = av_packet_alloc();
+    if (!pkt) {
+        qDebug() << "Could not allocate packet";
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    while (true) {
+
+        if(m_stop)
+            break;
+
+        if (is->pause) {
+            msleep(10);
+            continue;
+        }
+
+        // //seek后，刷新dec_ctx解码上下文
+        // if (is->flush_vctx) {
+        //     qCDebug(logSeek) << "视频解码线程：seek后，刷新dec_ctx解码上下文";
+        //     avcodec_flush_buffers(is->video_dec_ctx);
+        //     is->flush_vctx = false;
+        //     continue;
+        // }
+
+        //尝试从队列获取一个包（阻塞）
+        if(is->videoq.dequeue(pkt,m_stop) < 0){
+            qDebug() << "解码线程：获取包失败。";
+            break;
+        }
+
+        ret = decode_packet(is->video_dec_ctx, pkt ,frame);
+        av_packet_unref(pkt);
+        if (ret < 0)
+            break;
+        qCDebug(vdec)<<"解码线程：完成消费：pkt_size :"<<is->videoq.getSize();
+    }
+
+end:
+    av_frame_free(&frame);
+    av_packet_free(&pkt);
+}
