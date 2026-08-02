@@ -14,6 +14,7 @@
 #include <QValueAxis>
 #include "MyAudioDecodeThread.h"
 #include "MyDemuxThread.h"
+#include "MyVideoDecodeThread.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -52,6 +53,8 @@ private:
     MyDemuxThread *m_demuxThread = nullptr;
 
     MyAudioDecodeThread *m_audioDecodeThread = nullptr;
+
+    MyVideoDecodeThread *m_videoDecodeThread = nullptr;
 
     //进度条音频波形图
     QChart *m_durChart = nullptr;

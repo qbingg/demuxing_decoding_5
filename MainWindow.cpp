@@ -44,12 +44,22 @@ int MainWindow::initPlayer()
     }
     m_audioDecodeThread = new MyAudioDecodeThread;
     m_audioDecodeThread->setPlayerCtx(playerCtx);
+    m_videoDecodeThread = new MyVideoDecodeThread;
+    m_videoDecodeThread->setPlayerCtx(playerCtx);
 
     return 0;
 }
 
 void MainWindow::cleanPlayer()
 {
+    if(m_videoDecodeThread){
+        // m_videoDecodeThread->requestInterruption();
+        m_videoDecodeThread->stopThread();
+        m_videoDecodeThread->wait();
+        delete m_videoDecodeThread;
+        m_videoDecodeThread = nullptr;
+    }
+    qDebug()<<"Cleanup of videoDecodeThread finished.";
     if(m_audioDecodeThread){
         // m_audioDecodeThread->requestInterruption();
         m_audioDecodeThread->stopThread();
@@ -57,7 +67,7 @@ void MainWindow::cleanPlayer()
         delete m_audioDecodeThread;
         m_audioDecodeThread = nullptr;
     }
-    qDebug()<<"已清空视频线程";
+    qDebug()<<"Cleanup of audioDecodeThread finished.";
     if (m_demuxThread) {
         // m_demuxThread->requestInterruption();
         m_demuxThread->stopThread();
@@ -66,12 +76,12 @@ void MainWindow::cleanPlayer()
         delete m_demuxThread;
         m_demuxThread = nullptr;
     }
-    qDebug() << "已清空解封装线程";
+    qDebug() << "Cleanup of demuxThread finished.";
     if (playerCtx) {
         delete playerCtx;
         playerCtx = nullptr;
     }
-    qDebug() << "已清空playerCtx";
+    qDebug() << "Cleanup of playerCtx finished.";
 }
 
 void MainWindow::initDurPcmBarChart()
@@ -256,4 +266,5 @@ void MainWindow::on_btnPlay_clicked()
 
     m_demuxThread->start();
     m_audioDecodeThread->start();
+    m_videoDecodeThread->start();
 }
