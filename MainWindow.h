@@ -59,6 +59,14 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
+    /* 播放器会话id
+     * 1. 每次播放视频都是一次新的会话，id唯一。
+     * 2. 用于GUI线程，与跨线程通信相关的槽函数
+     * 3. GUI消息队列的槽函数需判断会话有效性，才能执行。
+     *      因为重播时，旧视频的对象已经被销毁，但是排队中的槽函数仍会执行，
+     *      新视频就会显示旧视频数据，所以必须干预处理。*/
+    uint64_t m_playSessionId = 0;
+
     FFmpegPlayerCtx *playerCtx = nullptr;
 
     MyDemuxThread *m_demuxThread = nullptr;

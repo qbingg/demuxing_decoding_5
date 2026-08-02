@@ -246,6 +246,10 @@ void MainWindow::dropEvent(QDropEvent *event)
 
 void MainWindow::on_btnPlay_clicked()
 {
+    //播放新视频，更新会话id
+    m_playSessionId++;
+    const uint64_t playSessionId = m_playSessionId;
+
     // 四步：delete -> new -> connect -> start
     cleanPlayer();
 
@@ -266,6 +270,10 @@ void MainWindow::on_btnPlay_clicked()
         qCDebug(demux)<<"receive VideoPktIDR: "<<ptsSec;
     },Qt::QueuedConnection);
     connect(m_audioDecodeThread,&MyAudioDecodeThread::sendpcmPeakBar,this,[=](double time,int16_t max,int16_t min){
+        if(m_playSessionId != playSessionId){
+            qDebug()<<"receive pcmPeakBar: playSessionId已改变，不往新视频插入旧数据";
+            return;
+        }
         m_durBarPoints.append(QPointF(time,max));
         m_durBarPoints.append(QPointF(time,min));
     },Qt::QueuedConnection);
