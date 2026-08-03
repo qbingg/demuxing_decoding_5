@@ -26,9 +26,6 @@
  *      （Qt手册56：难以简化为init、clean，难以获取到上一次chart指针）
  */
 
-//TEST
-#include <SDL3/SDL.h>
-
 int main(int argc, char *argv[])
 {
 #if defined(__linux__)
@@ -36,9 +33,6 @@ int main(int argc, char *argv[])
     //https://www.mail-archive.com/ubuntu-bugs%40lists.ubuntu.com/msg6288618.html
     qputenv("QT_QPA_PLATFORM", "xcb");
 #endif
-
-    //TEST
-    SDL_Init(SDL_INIT_AUDIO);
 
     QLoggingCategory::setFilterRules(
         /// "*.debug=false\n"       /* 保留，注意：只能false关掉qDebug()，true会打印一堆Qt隐藏debug信息 */
