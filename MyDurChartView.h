@@ -72,6 +72,15 @@ protected:
         emit sendMouseSeek(m_verticalSeries->at(0).x());
         qDebug()<<"MyDurChartView m_verticalSeries->at(0).x(): "<<m_verticalSeries->at(0).x();
     }
+    void leaveEvent(QEvent *event) override
+    {
+        QChartView::leaveEvent(event);
+        // 鼠标移出时隐藏垂直线（移到可视范围外）
+        if ((!m_verticalSeries) || (!m_axisX) || (!m_axisY))
+            return;
+        m_verticalSeries->replace(0, 0, 0);
+        m_verticalSeries->replace(1, 0, 0);
+    }
 };
 
 #endif // MYDURCHARTVIEW_H
