@@ -54,8 +54,6 @@ private slots:
 
     void on_btnForward_clicked();
 
-    void on_horizontalSlider_sliderReleased();
-
 private:
     Ui::MainWindow *ui;
 

@@ -109,6 +109,7 @@ void MainWindow::initDurPcmBarChart()
 
     // 显示到UI的QChartView控件（对象名：chartView）
     ui->durPcmChartView->setChart(m_durChart);
+    ui->durPcmChartView->initVerticalSeries(m_durChart,m_durAxisX,m_durAxisY);
     ui->durPcmChartView->setRenderHint(QPainter::Antialiasing); // 抗锯齿
 
     /*为pcm图表显示进行布局优化*/
@@ -129,13 +130,13 @@ void MainWindow::initDurPcmBarChart()
     // m_durAxisY->setGridLineVisible(false);
 
     m_durAudioClockSeries = new QLineSeries();
-    m_durAudioClockSeries->setPen(QPen(QColor(255, 180, 0), 1));
+    m_durAudioClockSeries->setPen(QPen(QColor(255, 180, 0), 3));
     m_durChart->addSeries(m_durAudioClockSeries);
     m_durAudioClockSeries->attachAxis(m_durAxisX);
     m_durAudioClockSeries->attachAxis(m_durAxisY);
 
     m_durVideoClockSeries = new QLineSeries();
-    m_durVideoClockSeries->setPen(QPen(QColor(180, 0, 255), 1));
+    m_durVideoClockSeries->setPen(QPen(QColor(180, 0, 255), 3));
     m_durChart->addSeries(m_durVideoClockSeries);
     m_durVideoClockSeries->attachAxis(m_durAxisX);
     m_durVideoClockSeries->attachAxis(m_durAxisY);
@@ -171,7 +172,6 @@ void MainWindow::resetDurPcmBarChart()
     m_durWaveSeries->clear();
     //新视频的总时长
     m_durAxisX->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
-    ui->horizontalSlider->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
     //清空进度条list（存储的旧视频数据）
     m_durBarPoints.clear();
 
@@ -276,6 +276,9 @@ void MainWindow::on_btnPlay_clicked()
     }
     resetDurPcmBarChart();
 
+    connect(ui->durPcmChartView, &MyDurChartView::sendMouseSeek, this, [=](double sec) {
+        seekAbsolute(sec);
+    });
     connect(m_demuxThread,&MyDemuxThread::sendVideoPktIDR,this,[=](double ptsSec){
         /* 在极端情况下，是可触发的，所以还是加判断吧。
          * 18:44:45: Starting D:\Codes\cppCode\FFmpegCode\demuxing_decoding_5\build\Desktop_Qt_6_5_3_MSVC2019_64bit-Debug\demuxing_decoding_5.exe...
@@ -330,14 +333,6 @@ void MainWindow::on_btnPlay_clicked()
         myffut::durBarChartDownSampling(m_durBarPoints,totalCbBars,pList,ui->durPcmChartView->width());
 
         m_durWaveSeries->replace(pList);
-
-        {
-            const QSignalBlocker blocker(ui->horizontalSlider);
-            // no signals here
-            //如果用户正在拖拽Slider，则不更新
-            if (!ui->horizontalSlider->isSliderDown())
-                ui->horizontalSlider->setValue(playerCtx->audio_clock);
-        }
 
         QList<QPointF> pAudioClockList;
         pAudioClockList.append(QPointF(playerCtx->audio_clock,0));
@@ -404,10 +399,4 @@ void MainWindow::on_btnForward_clicked()
     seekRelative(+10);
 }
 
-void MainWindow::on_horizontalSlider_sliderReleased()
-{
-    if (!playerCtx)
-        return;
 
-    seekAbsolute(ui->horizontalSlider->value());
-}
