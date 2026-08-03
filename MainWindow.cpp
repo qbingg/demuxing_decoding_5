@@ -153,15 +153,19 @@ void MainWindow::resetDurPcmBarChart()
      * 需要再次：
      * m_durWaveSeries->attachAxis(m_durAxisX);
      * m_durWaveSeries->attachAxis(m_durAxisY);
+     * 也不建议：
+     * if (series != m_durWaveSeries) {...}
+     * 每次新加m_series都需要在这if加上判断防止误删，我已经遭遇2次崩溃，调试发现因为如此。
      */
     const auto seriesList = m_durChart->series();
     for (QAbstractSeries *series : seriesList) {
-        if ((series != m_durWaveSeries) && (series != m_durAudioClockSeries)
-            && (series != m_durVideoClockSeries)) {
+        if(m_durIdrSeriesList.contains(series)){
             m_durChart->removeSeries(series);
             delete series;
         }
     }
+    //清空记录idr的list
+    m_durIdrSeriesList.clear();
 
     //清屏（注意通过replace更新，并不存储数据）
     m_durWaveSeries->clear();
@@ -273,6 +277,15 @@ void MainWindow::on_btnPlay_clicked()
     resetDurPcmBarChart();
 
     connect(m_demuxThread,&MyDemuxThread::sendVideoPktIDR,this,[=](double ptsSec){
+        /* 在极端情况下，是可触发的，所以还是加判断吧。
+         * 18:44:45: Starting D:\Codes\cppCode\FFmpegCode\demuxing_decoding_5\build\Desktop_Qt_6_5_3_MSVC2019_64bit-Debug\demuxing_decoding_5.exe...
+         * Decoding audio from file ' QFileInfo(D:\Codes\cppCode\FFmpegCode\third_party\test_videos\352x288_25fps.mp4)
+         * receive VideoPktIDR: playSessionId已改变，不往新视频插入旧数据
+         * receive pcmPeakBar: playSessionId已改变，不往新视频插入旧数据 */
+        if(m_playSessionId != playSessionId){
+            qDebug()<<"receive VideoPktIDR: playSessionId已改变，不往新视频插入旧数据";
+            return;
+        }
         QLineSeries *idr = new QLineSeries();
         idr->setPen(QPen(Qt::black, 1));
         ui->durPcmChartView->chart()->addSeries(idr);
@@ -281,6 +294,8 @@ void MainWindow::on_btnPlay_clicked()
         idr->append(ptsSec, -32768);
         idr->append(ptsSec, 32767);
         qCDebug(demux)<<"receive VideoPktIDR: "<<ptsSec;
+        // 记录idr以便reset时清除chart旧视频的idrSeries
+        m_durIdrSeriesList.append(idr);
     },Qt::QueuedConnection);
     connect(m_audioDecodeThread,&MyAudioDecodeThread::sendpcmPeakBar,this,[=](double time,int16_t max,int16_t min){
         if(m_playSessionId != playSessionId){
