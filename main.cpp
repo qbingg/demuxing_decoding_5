@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
         "demux.debug=false\n"        /* 高频单独打印 */
         "adec.debug=false\n"         /* 高频单独打印 */
         "vdec.debug=false\n"         /* 高频单独打印 */
+        "chart.debug=false\n"         /* 高频单独打印 */
         );
 
     QApplication a(argc, argv);

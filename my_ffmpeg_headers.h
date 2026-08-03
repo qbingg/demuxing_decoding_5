@@ -93,6 +93,7 @@ struct FFmpegPlayerCtx {
 /** 3. 声明我自己封装的ffmpeg函数 */
 #include <QDebug>
 #include <QImage>
+#include "log.h"
 // 命名空间：my ffmpeg utility
 namespace myffut {
 
@@ -408,7 +409,7 @@ inline int durBarChartDownSampling(const QList<QPointF> &srcPointList,
     const int barInterval = totalCbBars / pixelBars;
     if (barInterval == 0) {
         dstPointList = srcPointList;
-        qDebug() << "src.size太小了，除数为0，无需降采样";
+        qCDebug(chart) << "src.size太小了，除数为0，无需降采样";
         return 0;
     }
 
