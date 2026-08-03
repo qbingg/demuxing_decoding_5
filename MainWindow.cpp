@@ -127,6 +127,18 @@ void MainWindow::initDurPcmBarChart()
     // // 去掉坐标轴网格
     // m_durAxisX->setGridLineVisible(false);
     // m_durAxisY->setGridLineVisible(false);
+
+    m_durAudioClockSeries = new QLineSeries();
+    m_durAudioClockSeries->setPen(QPen(QColor(255, 180, 0), 1));
+    m_durChart->addSeries(m_durAudioClockSeries);
+    m_durAudioClockSeries->attachAxis(m_durAxisX);
+    m_durAudioClockSeries->attachAxis(m_durAxisY);
+
+    m_durVideoClockSeries = new QLineSeries();
+    m_durVideoClockSeries->setPen(QPen(QColor(180, 0, 255), 1));
+    m_durChart->addSeries(m_durVideoClockSeries);
+    m_durVideoClockSeries->attachAxis(m_durAxisX);
+    m_durVideoClockSeries->attachAxis(m_durAxisY);
 }
 
 void MainWindow::resetDurPcmBarChart()
@@ -144,7 +156,8 @@ void MainWindow::resetDurPcmBarChart()
      */
     const auto seriesList = m_durChart->series();
     for (QAbstractSeries *series : seriesList) {
-        if (series != m_durWaveSeries) {
+        if ((series != m_durWaveSeries) && (series != m_durAudioClockSeries)
+            && (series != m_durVideoClockSeries)) {
             m_durChart->removeSeries(series);
             delete series;
         }
@@ -310,6 +323,16 @@ void MainWindow::on_btnPlay_clicked()
             if (!ui->horizontalSlider->isSliderDown())
                 ui->horizontalSlider->setValue(playerCtx->audio_clock);
         }
+
+        QList<QPointF> pAudioClockList;
+        pAudioClockList.append(QPointF(playerCtx->audio_clock,0));
+        pAudioClockList.append(QPointF(playerCtx->audio_clock,-32768));
+        m_durAudioClockSeries->replace(pAudioClockList);
+
+        QList<QPointF> pVideoClockList;
+        pVideoClockList.append(QPointF(playerCtx->video_clock,0));
+        pVideoClockList.append(QPointF(playerCtx->video_clock,32767));
+        m_durVideoClockSeries->replace(pVideoClockList);
 
     });
     m_durTimer->start(100);

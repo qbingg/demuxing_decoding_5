@@ -59,6 +59,8 @@ int MyVideoDecodeThread::decode_packet(AVCodecContext *dec, const AVPacket *pkt,
             double video_clock = frame->pts * av_q2d(is->video_stream->time_base);
             double audio_clock = is->audio_clock;
 
+            is->video_clock = video_clock;
+
             QString diff = QString::number((video_clock-audio_clock),'d',15);
 
             qCDebug(vdec) << "frame pts:\t" << frame->pts << "\t"
