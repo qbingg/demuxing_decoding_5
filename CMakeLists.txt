@@ -19,6 +19,7 @@ qt_add_executable(demuxing_decoding_5
     MyAudioDecodeThread.h MyAudioDecodeThread.cpp
     MyVideoDecodeThread.h MyVideoDecodeThread.cpp
     MyYUV420POpenGLWidget.h
+    MyDurChartView.h
 )
 
 # MinGW/gcc：把当前源码目录（MyGLWidget.h 所在目录）加入头文件搜索路径
