@@ -15,6 +15,15 @@ MainWindow::MainWindow(QWidget *parent)
     ui->btnPause->setCheckable(true);
 
     initDurPcmBarChart();
+
+    /* 因为ui->durPcmChartView不会因为重播而重置生命周期，所以不能写在btnPlay里，
+     * 不然每重播一次就会多connect一次，而旧的又不会disconnect也会生效。
+     * 所以改为在初始化chart后，仅连接一次即可。 */
+    connect(ui->durPcmChartView, &MyDurChartView::sendMouseSeek, this, [=](double sec) {
+        if (!playerCtx)
+            return;
+        seekAbsolute(sec);
+    });
 }
 
 MainWindow::~MainWindow()
@@ -276,9 +285,6 @@ void MainWindow::on_btnPlay_clicked()
     }
     resetDurPcmBarChart();
 
-    connect(ui->durPcmChartView, &MyDurChartView::sendMouseSeek, this, [=](double sec) {
-        seekAbsolute(sec);
-    });
     connect(m_demuxThread,&MyDemuxThread::sendVideoPktIDR,this,[=](double ptsSec){
         /* 在极端情况下，是可触发的，所以还是加判断吧。
          * 18:44:45: Starting D:\Codes\cppCode\FFmpegCode\demuxing_decoding_5\build\Desktop_Qt_6_5_3_MSVC2019_64bit-Debug\demuxing_decoding_5.exe...
