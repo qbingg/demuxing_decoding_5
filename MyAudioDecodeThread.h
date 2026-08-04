@@ -40,6 +40,14 @@ private:
     FFmpegPlayerCtx *is = nullptr;
 
     std::atomic<bool> m_stop = 0;
+
+    int m_frameIndex = 0;
+    int16_t m_maxVal = std::numeric_limits<int16_t>::min();//-32768 获取 qint16 类型能表示的最小值。
+    int16_t m_minVal = std::numeric_limits<int16_t>::max();// 32767 获取 qint16 类型能表示的最大值。
+
+    //第一次降采样函数
+    int pcmS16PeakBarDownSampling(int16_t *src,const int srcLen);
+
 protected:
     void run()override;
 };

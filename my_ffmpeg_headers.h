@@ -88,6 +88,14 @@ struct FFmpegPlayerCtx {
     // flush flag for seek//清的是 FFmpeg 解码器内部缓存。（旧的 P/B 帧依赖的前后帧等）
     std::atomic<bool> flush_actx = false;
     std::atomic<bool> flush_vctx = false;
+
+
+    /* 降采样dsp，见FFmpeg手册35 */
+    const int theFirstDownSamplingIntervalMilliseconds = 50;//ms
+    const int firstDspIntervalFrames = (audio_tgt_freq * theFirstDownSamplingIntervalMilliseconds) / 1000;
+    uint64_t totalBarsOfFirstDsp;//等于 totalFrames / firstDspIntervalFrames
+    uint64_t totalFrames;//等于 duration * audio_tgt_freq
+
 };
 
 /** 3. 声明我自己封装的ffmpeg函数 */

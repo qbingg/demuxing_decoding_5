@@ -122,6 +122,8 @@ int MyAudioDecodeThread::decode_packet(AVCodecContext *dec, const AVPacket *pkt,
 
 void MyAudioDecodeThread::getAudioData(unsigned char *stream, int len)
 {
+    qDebug()<<"getAudioData:"<<len;
+
     // decoder is not ready or in pause state, output silence
     if (!is->audio_dec_ctx) {
         memset(stream, 0, len);
@@ -150,21 +152,54 @@ void MyAudioDecodeThread::getAudioData(unsigned char *stream, int len)
         return;
     }
 
+    // {
+    //     double bytes_per_sample = av_get_bytes_per_sample(is->audio_tgt_fmt);
+    //
+    //     int16_t max, min;
+    //     myffut::pcmS16PeakBarDownSampling(reinterpret_cast<int16_t *>(stream),
+    //                                       len / bytes_per_sample,
+    //                                       max,
+    //                                       min);
+    //     emit sendpcmPeakBar(is->audio_clock, max, min);
+    // }
     {
         double bytes_per_sample = av_get_bytes_per_sample(is->audio_tgt_fmt);
 
-        int16_t max, min;
-        myffut::pcmS16PeakBarDownSampling(reinterpret_cast<int16_t *>(stream),
-                                          len / bytes_per_sample,
-                                          max,
-                                          min);
-        emit sendpcmPeakBar(is->audio_clock, max, min);
+        pcmS16PeakBarDownSampling(reinterpret_cast<int16_t *>(stream), len / bytes_per_sample);
     }
 }
 
 double MyAudioDecodeThread::getBytesToSamples() const
 {
     return av_get_bytes_per_sample(is->audio_tgt_fmt);
+}
+
+int MyAudioDecodeThread::pcmS16PeakBarDownSampling(int16_t *src, const int srcLen)
+{
+    //求采样点集的最大最小值，无论是LRLRLR,LLLRRR,LLLLLL
+
+    if (!src || srcLen <= 0)
+        return -1;
+
+    // int16_t maxVal = std::numeric_limits<int16_t>::min();//-32768 获取 qint16 类型能表示的最小值。
+    // int16_t minVal = std::numeric_limits<int16_t>::max();// 32767 获取 qint16 类型能表示的最大值。
+
+    int sampleIndex = m_frameIndex * is->audio_tgt_channels;
+
+    for (int i = 0; i < srcLen; ++i) {
+        m_maxVal = qMax(m_maxVal, src[i]);
+        m_minVal = qMin(m_minVal, src[i]);
+        sampleIndex++;
+
+        m_frameIndex = sampleIndex / is->audio_tgt_channels;
+        if(m_frameIndex >= is->firstDspIntervalFrames){
+            emit sendpcmPeakBar(is->audio_clock, m_maxVal, m_minVal);
+            m_maxVal = std::numeric_limits<int16_t>::min();//-32768 获取 qint16 类型能表示的最小值。
+            m_minVal = std::numeric_limits<int16_t>::max();// 32767 获取 qint16 类型能表示的最大值。
+            m_frameIndex = 0;
+        }
+    }
+    return 0;
 }
 
 void MyAudioDecodeThread::setPlayerCtx(FFmpegPlayerCtx *ctx)
