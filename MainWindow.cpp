@@ -356,7 +356,7 @@ void MainWindow::on_btnPlay_clicked()
         //目标柱状图数量
         const int totalBarsOfSecondDsp = ui->durPcmChartView->width();
         //总时长
-        const uint64_t duration = playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base);
+        const double duration = playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base);
         //采样率（不是解码后的，而是swr后给sdl播放的）
         const double sampleRate = playerCtx->audio_tgt_freq;//采样率（每秒采样次数）48000.0;
         //总采样数（考虑声道，如2sample=1frame）

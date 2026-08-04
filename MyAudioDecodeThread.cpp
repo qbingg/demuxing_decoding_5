@@ -282,6 +282,11 @@ void MyAudioDecodeThread::run()
             avcodec_flush_buffers(is->audio_dec_ctx);
             //清理PCM buf队列，不然1~2秒后才会播放seek的音频
             is->audio_buf_q.bufFlush();
+            //seek后重置 m_sampleIndex/m_maxVal/m_minVal，重新累计第一次降采样
+            m_sampleIndex = 0; // 重置索引
+            m_maxVal = std::numeric_limits<int16_t>::min(); //-32768 获取 qint16 类型能表示的最小值。
+            m_minVal = std::numeric_limits<int16_t>::max(); // 32767 获取 qint16 类型能表示的最大值。
+
             continue;
         }
 
