@@ -184,19 +184,18 @@ int MyAudioDecodeThread::pcmS16PeakBarDownSampling(int16_t *src, const int srcLe
     // int16_t maxVal = std::numeric_limits<int16_t>::min();//-32768 获取 qint16 类型能表示的最小值。
     // int16_t minVal = std::numeric_limits<int16_t>::max();// 32767 获取 qint16 类型能表示的最大值。
 
-    int sampleIndex = m_frameIndex * is->audio_tgt_channels;
-
     for (int i = 0; i < srcLen; ++i) {
         m_maxVal = qMax(m_maxVal, src[i]);
         m_minVal = qMin(m_minVal, src[i]);
-        sampleIndex++;
+        m_sampleIndex++;
 
-        m_frameIndex = sampleIndex / is->audio_tgt_channels;
-        if(m_frameIndex >= is->firstDspIntervalFrames){
+        // frameIndex = sampleIndex / channels;
+        if ((m_sampleIndex / is->audio_tgt_channels) >= is->firstDspIntervalFrames) {
             emit sendpcmPeakBar(is->audio_clock, m_maxVal, m_minVal);
-            m_maxVal = std::numeric_limits<int16_t>::min();//-32768 获取 qint16 类型能表示的最小值。
-            m_minVal = std::numeric_limits<int16_t>::max();// 32767 获取 qint16 类型能表示的最大值。
-            m_frameIndex = 0;
+            // 重置索引
+            m_sampleIndex = 0;
+            m_maxVal = std::numeric_limits<int16_t>::min(); //-32768 获取 qint16 类型能表示的最小值。
+            m_minVal = std::numeric_limits<int16_t>::max(); // 32767 获取 qint16 类型能表示的最大值。
         }
     }
     return 0;
