@@ -355,7 +355,7 @@ void MainWindow::on_btnPlay_clicked()
 
     // });
     connect(m_durTimer,&QTimer::timeout,this,[=]{
-
+        /** 第二次降采样：以像素为单位，如width */
         //目标柱状图数量
         const int totalBarsOfSecondDsp = ui->durPcmChartView->width();
         //总时长
@@ -369,12 +369,20 @@ void MainWindow::on_btnPlay_clicked()
         //第二次采样间隔
         const int secondDspIntervalBars = totalBarsOfFirstDsp / totalBarsOfSecondDsp;
 
-        QList<QPointF> pList;
+        QList<QPointF> totalBarsOfSecondDspPointList;
         // blockDownSampling(m_durPoints,pList,pixelBars);
         // intervalDownSampling(m_durPoints,pList,dspBarsInterval);
-        myffut::durBarChartDownSampling(m_durBarPoints,totalBarsOfFirstDsp,pList,ui->durPcmChartView->width());
+        // myffut::durBarChartDownSampling(m_durBarPoints,totalBarsOfFirstDsp,pList,ui->durPcmChartView->width());
 
-        m_durWaveSeries->replace(pList);
+        // m_durBarPoints会在未来改名为totalBarsOfFirstDspPointList这样的规范
+        if (secondDspIntervalBars == 0) {
+            totalBarsOfSecondDspPointList = m_durBarPoints;
+            qCDebug(dsp2) << "totalBarsOfFirstDspPoint 太少了，除数为0，dps2无需降采样";
+            return;
+        }
+        myffut::intervalDownSampling(m_durBarPoints, totalBarsOfSecondDspPointList, secondDspIntervalBars);
+
+        m_durWaveSeries->replace(totalBarsOfSecondDspPointList);
 
         QList<QPointF> pAudioClockList;
         pAudioClockList.append(QPointF(playerCtx->audio_clock,0));

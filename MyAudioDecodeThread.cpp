@@ -177,6 +177,8 @@ void MyAudioDecodeThread::getAudioData(unsigned char *stream, int len)
     //     emit sendpcmPeakBar(is->audio_clock, max, min);
     // }
     {
+        /** 第一次降采样：以时间为单位，如10ms，20ms */
+
         double bytes_per_sample = av_get_bytes_per_sample(is->audio_tgt_fmt);
 
         pcmS16PeakBarDownSampling(reinterpret_cast<int16_t *>(stream), len / bytes_per_sample);
