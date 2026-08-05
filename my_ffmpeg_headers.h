@@ -450,6 +450,45 @@ inline void stream_seek(FFmpegPlayerCtx *is, double targetSec, int rel = -1)
     }
 }
 
+inline int bytes_to_seconds(const uint64_t src_bytes,
+                            const double channels,
+                            const double bytes_per_sample,
+                            const double sample_rate,
+                            double &dst_duration)
+{
+    // // 队内剩余Byte
+    // int bytes = is->audio_buf_q.getSize();
+    // // 换算成采样点sample，公式：Byte = ( sample * 采样点的位深 ) * 声道数
+    // double channels = static_cast<double>(is->audio_tgt_channels);
+    // double bytes_per_sample = av_get_bytes_per_sample(is->audio_tgt_fmt);
+    // uint64_t samples = (bytes / channels) / bytes_per_sample;
+    // // 换算成时间s，公式：s = 采样点 / 每秒采样次数sample_rate
+    // double sample_rate = is->audio_tgt_freq;
+    // double duration = samples / sample_rate;
+
+    //验证数据有效性
+    if (src_bytes == 0) {
+        qDebug()<<"bytes_to_seconds() : src_bytes == 0";
+        dst_duration = 0;
+        return 0;
+    }
+    //验证除数有效性
+    if ((channels <= 0) || (bytes_per_sample <= 0) || (sample_rate <= 0)) {
+        qDebug()<<"bytes_to_seconds() : 验证除数有效性失败，让dst_duration = 0";
+        dst_duration = 0;
+        return -1;
+    }
+
+    // 换算成采样点sample，公式：Byte = ( sample * 采样点的位深 ) * 声道数
+    uint64_t samples = (src_bytes / channels) / bytes_per_sample;
+
+    // 换算成时间s，公式：s = 采样点 / 每秒采样次数sample_rate
+    dst_duration = samples / sample_rate;
+
+    return 0;
+}
+
+
 }
 
 
