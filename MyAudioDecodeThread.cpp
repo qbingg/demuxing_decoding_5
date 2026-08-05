@@ -128,7 +128,7 @@ int MyAudioDecodeThread::decode_packet(AVCodecContext *dec, const AVPacket *pkt,
 
 void MyAudioDecodeThread::getAudioData(unsigned char *stream, int len)
 {
-    qDebug()<<"getAudioData:"<<len;
+    // qDebug()<<"getAudioData:"<<len; // 测试SDL3回调取水量
 
     // decoder is not ready or in pause state, output silence
     if (!is->audio_dec_ctx) {
@@ -205,6 +205,8 @@ int MyAudioDecodeThread::pcmS16PeakBarDownSampling(int16_t *src, const int srcLe
 
         // frameIndex = sampleIndex / channels;
         if ((m_sampleIndex / is->audio_tgt_channels) >= is->firstDspIntervalFrames) {
+            qCDebug(dsp1) << "frameIndex:" << (m_sampleIndex / is->audio_tgt_channels)
+                          << "\t is->firstDspIntervalFrames:" << is->firstDspIntervalFrames;
             emit sendpcmPeakBar(is->audio_clock, m_maxVal, m_minVal);
             // 重置索引
             m_sampleIndex = 0;

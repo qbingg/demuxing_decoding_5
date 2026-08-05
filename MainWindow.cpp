@@ -311,6 +311,9 @@ void MainWindow::on_btnPlay_clicked()
             qDebug()<<"receive pcmPeakBar: playSessionId已改变，不往新视频插入旧数据";
             return;
         }
+        qCDebug(dsp1) << "receive pcmPeakBar audio time(sec):" << QString::number(time, 'd', 3)
+                      << "\t 1stDpsIntervalMs: "
+                      << playerCtx->theFirstDownSamplingIntervalMilliseconds;
         m_durBarPoints.append(QPointF(time,max));
         m_durBarPoints.append(QPointF(time,min));
     },Qt::QueuedConnection);
