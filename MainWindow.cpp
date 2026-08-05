@@ -369,20 +369,26 @@ void MainWindow::on_btnPlay_clicked()
         //第二次采样间隔
         const int secondDspIntervalBars = totalBarsOfFirstDsp / totalBarsOfSecondDsp;
 
-        QList<QPointF> totalBarsOfSecondDspPointList;
+        QList<QPointF> countBarsOfSecondDspPointList;
         // blockDownSampling(m_durPoints,pList,pixelBars);
         // intervalDownSampling(m_durPoints,pList,dspBarsInterval);
         // myffut::durBarChartDownSampling(m_durBarPoints,totalBarsOfFirstDsp,pList,ui->durPcmChartView->width());
 
-        // m_durBarPoints会在未来改名为totalBarsOfFirstDspPointList这样的规范
+        // m_durBarPoints会在未来改名为countBarsOfFirstDspPointList这样的规范
         if (secondDspIntervalBars == 0) {
-            totalBarsOfSecondDspPointList = m_durBarPoints;
+            countBarsOfSecondDspPointList = m_durBarPoints;
             qCDebug(dsp2) << "totalBarsOfFirstDspPoint 太少了，除数为0，dps2无需降采样";
-            return;
+        }else{
+            myffut::intervalDownSampling(m_durBarPoints, countBarsOfSecondDspPointList, secondDspIntervalBars);
         }
-        myffut::intervalDownSampling(m_durBarPoints, totalBarsOfSecondDspPointList, secondDspIntervalBars);
+        m_durWaveSeries->replace(countBarsOfSecondDspPointList);
 
-        m_durWaveSeries->replace(totalBarsOfSecondDspPointList);
+        qCDebug(dsp2) << "countDsp1Points:" << m_durBarPoints.size()
+                      << "\t countDsp2Points:" << countBarsOfSecondDspPointList.size()
+                      << "\t dsp2IntervalBars:" << secondDspIntervalBars
+                      << "\t totalBarsOfDsp1:" << totalBarsOfFirstDsp
+                      << "\t totalBarsOfDsp2(chart.width)" << totalBarsOfSecondDsp
+                      << "\t 注意验证公式: countPoints = totalBars * 2";
 
         QList<QPointF> pAudioClockList;
         pAudioClockList.append(QPointF(playerCtx->audio_clock,0));
