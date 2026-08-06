@@ -1,6 +1,8 @@
 #ifndef MYAUDIODECODETHREAD_H
 #define MYAUDIODECODETHREAD_H
 
+#include <atomic>
+#include <limits>
 #include <QDebug>
 #include <QThread>
 #include <SDL3/SDL.h>
@@ -41,6 +43,13 @@ private:
 
     std::atomic<bool> m_stop = 0;
 
+    /* 第一次降采样是在SDL回调线程进行的，在音频解码线程直接修改存在并发风险
+     * 声明为原子变量也不能完全解决问题，
+     * 因为index、max、min三个值，全部为原子变量，并不能完全同步，要知道SDL回调可是约10ms一次的超高频率
+     * 更稳妥的做法就是音频解码线程不修改，只发起一个bool标志，让三个值的读写操作都在SDL回调线程里 */
+    // load()读，store(false)写，exchange(false)“读旧值”和“写新值”
+    std::atomic<bool> m_flushFirstDspFrameIndex = false;
+    // SDL thread use only.
     int m_sampleIndex = 0;// frameIndex = sampleIndex / channels;
     int16_t m_maxVal = std::numeric_limits<int16_t>::min();//-32768 获取 qint16 类型能表示的最小值。
     int16_t m_minVal = std::numeric_limits<int16_t>::max();// 32767 获取 qint16 类型能表示的最大值。

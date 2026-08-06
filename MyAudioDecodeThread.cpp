@@ -179,6 +179,14 @@ void MyAudioDecodeThread::getAudioData(unsigned char *stream, int len)
     {
         /** 第一次降采样：以时间为单位，如10ms，20ms */
 
+        //seek后重置 m_sampleIndex/m_maxVal/m_minVal，重新累计第一次降采样
+        if(m_flushFirstDspFrameIndex.exchange(false)){
+            qDebug() << "seek: flush FirstDspFrameIndex/m_maxVal/m_minVal...";
+            int m_sampleIndex = 0;// 重置索引
+            int16_t m_maxVal = std::numeric_limits<int16_t>::min();//-32768 获取 qint16 类型能表示的最小值。
+            int16_t m_minVal = std::numeric_limits<int16_t>::max();// 32767 获取 qint16 类型能表示的最大值。
+        }
+
         double bytes_per_sample = av_get_bytes_per_sample(is->audio_tgt_fmt);
 
         pcmS16PeakBarDownSampling(reinterpret_cast<int16_t *>(stream), len / bytes_per_sample);
@@ -301,10 +309,7 @@ void MyAudioDecodeThread::run()
             //清理PCM buf队列，不然1~2秒后才会播放seek的音频
             is->audio_buf_q.bufFlush();
             //seek后重置 m_sampleIndex/m_maxVal/m_minVal，重新累计第一次降采样
-            m_sampleIndex = 0; // 重置索引
-            m_maxVal = std::numeric_limits<int16_t>::min(); //-32768 获取 qint16 类型能表示的最小值。
-            m_minVal = std::numeric_limits<int16_t>::max(); // 32767 获取 qint16 类型能表示的最大值。
-
+            m_flushFirstDspFrameIndex.store(true);
             continue;
         }
 
