@@ -290,28 +290,6 @@ inline int frame_to_yuv420planes(AVFrame *src,
     return 0;
 }
 
-//第一次降采样函数
-inline int pcmS16PeakBarDownSampling(int16_t *src,const int srcLen,int16_t &dstMax,int16_t &dstMin)
-{
-    //求采样点集的最大最小值，无论是LRLRLR,LLLRRR,LLLLLL
-
-    if (!src || srcLen <= 0)
-        return -1;
-
-    int16_t maxVal = std::numeric_limits<int16_t>::min();//-32768 获取 qint16 类型能表示的最小值。
-    int16_t minVal = std::numeric_limits<int16_t>::max();// 32767 获取 qint16 类型能表示的最大值。
-
-    for (int i = 0; i < srcLen; ++i) {
-        maxVal = qMax(maxVal, src[i]);
-        minVal = qMin(minVal, src[i]);
-    }
-
-    dstMax = maxVal;
-    dstMin = minVal;
-
-    return 0;
-}
-
 //第二次降采样函数：分块峰值降采样
 inline int blockDownSampling(const QList<QPointF> &srcPointList,
                              QList<QPointF> &dstPointList,
@@ -402,26 +380,6 @@ inline int intervalDownSampling(const QList<QPointF> &srcPointList,
         dstPointList.append(QPointF(x, minVal));
     }
     return 0;
-}
-
-//便利函数：音频波形图依据chart的width降采样
-inline int durBarChartDownSampling(const QList<QPointF> &srcPointList,
-                            const int totalCbBars,
-                            QList<QPointF> &dstPointList,
-                            const int width)
-{
-    //降采样：totalCbBars -> pixelBars
-    //目标柱状图数量
-    const int pixelBars = width;
-
-    const int barInterval = totalCbBars / pixelBars;
-    if (barInterval == 0) {
-        dstPointList = srcPointList;
-        qCDebug(chart) << "src.size太小了，除数为0，无需降采样";
-        return 0;
-    }
-
-    return intervalDownSampling(srcPointList, dstPointList, barInterval);
 }
 
 inline void stream_seek(FFmpegPlayerCtx *is, double targetSec, int rel = -1)

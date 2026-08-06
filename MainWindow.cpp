@@ -317,43 +317,6 @@ void MainWindow::on_btnPlay_clicked()
         m_durBarPoints.append(QPointF(time,max));
         m_durBarPoints.append(QPointF(time,min));
     },Qt::QueuedConnection);
-    // connect(m_durTimer,&QTimer::timeout,this,[=]{
-    //     // m_durWaveSeries->replace(m_durPoints);
-
-    //     //第一次采样：totalBars -> totalCbBars
-    //     //第二次采样：totalCbBars -> pixelBars
-
-    //     //目标柱状图数量
-    //     const int pixelBars = ui->durPcmChartView->width();
-    //     //总时长
-    //     const double duration = playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base);
-    //     //采样率（不是解码后的，而是swr后给sdl播放的）
-    //     const double sampleRate = playerCtx->audio_tgt_freq;//采样率（每秒采样次数）44100.0;
-    //     //总采样数
-    //     const double samples = duration * sampleRate;
-    //     //sdl callback总次数（取水次数）
-    //     const double totalCbBars = samples / 1024.0;
-    //     //第二次采样间隔
-    //     const int dspBarsInterval = totalCbBars / pixelBars;
-
-    //     QList<QPointF> pList;
-    //     // blockDownSampling(m_durPoints,pList,pixelBars);
-    //     // intervalDownSampling(m_durPoints,pList,dspBarsInterval);
-    //     myffut::durBarChartDownSampling(m_durBarPoints,totalCbBars,pList,ui->durPcmChartView->width());
-
-    //     m_durWaveSeries->replace(pList);
-
-    //     QList<QPointF> pAudioClockList;
-    //     pAudioClockList.append(QPointF(playerCtx->audio_clock,0));
-    //     pAudioClockList.append(QPointF(playerCtx->audio_clock,-32768));
-    //     m_durAudioClockSeries->replace(pAudioClockList);
-
-    //     QList<QPointF> pVideoClockList;
-    //     pVideoClockList.append(QPointF(playerCtx->video_clock,0));
-    //     pVideoClockList.append(QPointF(playerCtx->video_clock,32767));
-    //     m_durVideoClockSeries->replace(pVideoClockList);
-
-    // });
     connect(m_durTimer,&QTimer::timeout,this,[=]{
         /** 第二次降采样：以像素为单位，如width */
         //目标柱状图数量
@@ -386,7 +349,7 @@ void MainWindow::on_btnPlay_clicked()
         qCDebug(dsp2) << "countDsp1Points:" << m_durBarPoints.size()
                       << "\t countDsp2Points:" << countBarsOfSecondDspPointList.size()
                       << "\t dsp2IntervalBars:" << secondDspIntervalBars
-                      << "\t totalBarsOfDsp1:" << totalBarsOfFirstDsp
+                      << "\t totalBarsOfDsp1(*间隔ms=时长):" << totalBarsOfFirstDsp
                       << "\t totalBarsOfDsp2(chart.width)" << totalBarsOfSecondDsp
                       << "\t 注意验证公式: countPoints = totalBars * 2";
 
