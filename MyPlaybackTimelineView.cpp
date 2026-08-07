@@ -7,6 +7,11 @@ MyPlaybackTimelineView::MyPlaybackTimelineView(QWidget *parent)
     : QChartView{parent}
 {
     setRenderHint(QPainter::Antialiasing); // 抗锯齿
+
+    /* Qt文档：
+     * 如果禁用鼠标跟踪（默认设置），则小部件仅在移动鼠标时按下至少一个鼠标按钮时才会接收鼠标移动事件。
+     * 如果启用了鼠标跟踪，即使没有按下任何按钮，小部件也会收到鼠标移动事件。*/
+    setMouseTracking(true);
 }
 
 void MyPlaybackTimelineView::initChart()
@@ -155,4 +160,43 @@ void MyPlaybackTimelineView::updateChartView(double newAudioClock, double newVid
 
     //请求 Qt 尽快重绘。
     update();
+}
+
+void MyPlaybackTimelineView::mouseMoveEvent(QMouseEvent *event)
+{
+    QChartView::mouseMoveEvent(event);
+
+    // 因为不在构造函数初始化，而是延迟到initChart()，需要判断有效值
+    if ((!m_playbackCursorVerticalSeries) || (!m_axisX) || (!m_axisY))
+        return;
+
+    //以MyPlaybackTimelineView窗口左上角为原点，鼠标所在的像素坐标
+    QPoint point = event->pos();
+
+    // 视图坐标 -> 图表数据坐标
+    QPointF chartPoint = chart()->mapToValue(point);
+
+    // 垂直线：x = 鼠标x，y 纵跨整个轴范围
+    m_playbackCursorVerticalSeries->replace(0, chartPoint.x(), m_axisY->min());
+    m_playbackCursorVerticalSeries->replace(1, chartPoint.x(), m_axisY->max());
+}
+
+void MyPlaybackTimelineView::mouseReleaseEvent(QMouseEvent *event)
+{
+    QChartView::mouseReleaseEvent(event);
+    if ((!m_playbackCursorVerticalSeries) || (!m_axisX) || (!m_axisY))
+        return;
+    emit sendMouseSeek(m_playbackCursorVerticalSeries->at(0).x());
+    qDebug() << "MyPlaybackTimelineView m_playbackCursorVerticalSeries->at(0).x(): "
+             << m_playbackCursorVerticalSeries->at(0).x();
+}
+
+void MyPlaybackTimelineView::leaveEvent(QEvent *event)
+{
+    QChartView::leaveEvent(event);
+    // 鼠标移出时隐藏垂直线（移到可视范围外）
+    if ((!m_playbackCursorVerticalSeries) || (!m_axisX) || (!m_axisY))
+        return;
+    m_playbackCursorVerticalSeries->replace(0, 0, 0);
+    m_playbackCursorVerticalSeries->replace(1, 0, 0);
 }

@@ -25,9 +25,11 @@ public:
     void updateChartView(double newAudioClock, double newVideoClock);
 
 signals:
-
+    void sendMouseSeek(double targetSec);
 protected:
-
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void leaveEvent(QEvent *event) override;
 private:
     QChart *m_chart = nullptr;
 
