@@ -22,7 +22,7 @@ public:
     void receiveVideoPktIDR(double ptsSec);
     void receiveFirstDspBar(double timeSec,int16_t max,int16_t min);
 
-
+    void updateChartView(double newAudioClock, double newVideoClock);
 
 signals:
 

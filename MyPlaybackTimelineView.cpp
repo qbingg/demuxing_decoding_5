@@ -1,5 +1,8 @@
 #include "MyPlaybackTimelineView.h"
 
+#include "log.h"
+#include "my_ffmpeg_headers.h"
+
 MyPlaybackTimelineView::MyPlaybackTimelineView(QWidget *parent)
     : QChartView{parent}
 {
@@ -110,4 +113,46 @@ void MyPlaybackTimelineView::resetTotalBarsOfFirstDsp(const double newDurationSe
     const uint64_t totalFrames = duration * sampleRate;
     //第一次降采样后，总采样数
     m_totalBarsOfFirstDsp = totalFrames / newFirstDspIntervalFrames;
+}
+
+void MyPlaybackTimelineView::updateChartView(double newAudioClock, double newVideoClock)
+{
+    /** 第二次降采样：以像素为单位，如width */
+
+    //第二次采样目标总数量（柱状图数）
+    const int totalBarsOfSecondDsp = width() != 0 ? width() : 1; //除数边界检查
+    //第二次采样间隔
+    const int secondDspIntervalBars = m_totalBarsOfFirstDsp / totalBarsOfSecondDsp;
+
+    QList<QPointF> countBarsOfSecondDspPointList;
+    if (secondDspIntervalBars == 0) {
+        countBarsOfSecondDspPointList = m_countBarsOfFirstDspPointList;
+        qCDebug(dsp2) << "totalBarsOfFirstDspPoint 太少了，除数为0，dps2无需降采样";
+    } else {
+        myffut::intervalDownSampling(m_countBarsOfFirstDspPointList,
+                                     countBarsOfSecondDspPointList,
+                                     secondDspIntervalBars);
+    }
+    m_secondDspSeries->replace(countBarsOfSecondDspPointList);
+
+    qCDebug(dsp2) << "countDsp1Points:" << m_countBarsOfFirstDspPointList.size()
+                  << "\t countDsp2Points:" << countBarsOfSecondDspPointList.size()
+                  << "\t dsp2IntervalBars:" << secondDspIntervalBars
+                  << "\t totalBarsOfDsp1(*间隔ms=时长):" << m_totalBarsOfFirstDsp
+                  << "\t totalBarsOfDsp2(chart.width)" << totalBarsOfSecondDsp
+                  << "\t 注意验证公式: countPoints = totalBars * 2";
+
+    // 更新音频时钟、视频时钟竖直线
+    QList<QPointF> pAudioClockList;
+    pAudioClockList.append(QPointF(newAudioClock, 0));
+    pAudioClockList.append(QPointF(newAudioClock, -32768));
+    m_audioClockSeries->replace(pAudioClockList);
+
+    QList<QPointF> pVideoClockList;
+    pVideoClockList.append(QPointF(newVideoClock, 0));
+    pVideoClockList.append(QPointF(newVideoClock, 32767));
+    m_videoClockSeries->replace(pVideoClockList);
+
+    //请求 Qt 尽快重绘。
+    update();
 }
