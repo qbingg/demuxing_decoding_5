@@ -162,7 +162,6 @@ void MainWindow::on_btnPlay_clicked()
     const uint64_t playSessionId = m_playSessionId;
 
     // 四步：delete -> new -> connect -> start
-    cleanPlayer();
     /*重置Timer
      * 方法1. delete旧视频的Timer
      * 方法2. disconnect比较麻烦不直观
@@ -172,6 +171,8 @@ void MainWindow::on_btnPlay_clicked()
         delete m_playbackTimer;
         m_playbackTimer = nullptr;
     }
+    cleanPlayer();
+
 
     if (initPlayer() < 0) {
         qDebug() << "initPlayer Failed.";
