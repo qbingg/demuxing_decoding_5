@@ -64,7 +64,7 @@ void MyPlaybackTimelineView::initChart()
     m_videoClockSeries->attachAxis(m_axisY);
 }
 
-void MyPlaybackTimelineView::resetChart(double durationSec)
+void MyPlaybackTimelineView::resetChart(const double newDurationSec)
 {
     /* 清除chart旧视频的idrSeries
      * 不建议：
@@ -93,7 +93,21 @@ void MyPlaybackTimelineView::resetChart(double durationSec)
     //清屏（注意通过replace更新，并不存储数据）
     m_secondDspSeries->clear();
     //新视频的总时长
-    m_axisX->setRange(0, durationSec);
+    m_axisX->setRange(0, newDurationSec);
     //清空进度条list（存储的旧视频数据）
     m_countBarsOfFirstDspPointList.clear();
+}
+
+void MyPlaybackTimelineView::resetTotalBarsOfFirstDsp(const double newDurationSec,
+                                                      const double newSampleRate,
+                                                      const int newFirstDspIntervalFrames)
+{
+    //总时长
+    const double duration = newDurationSec;
+    //采样率（不是解码后的，而是swr后给sdl播放的）
+    const double sampleRate = newSampleRate; //采样率（每秒采样次数）48000.0;
+    //总采样数（考虑声道，如2sample=1frame）
+    const uint64_t totalFrames = duration * sampleRate;
+    //第一次降采样后，总采样数
+    m_totalBarsOfFirstDsp = totalFrames / newFirstDspIntervalFrames;
 }

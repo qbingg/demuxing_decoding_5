@@ -14,10 +14,15 @@ public:
     explicit MyPlaybackTimelineView(QWidget *parent = nullptr);
 
     void initChart();
-    void resetChart(double durationSec);
+    void resetChart(const double newDurationSec);
+    void resetTotalBarsOfFirstDsp(const double newDurationSec,
+                                  const double newSampleRate,
+                                  const int newFirstDspIntervalFrames);
 
     void receiveVideoPktIDR(double ptsSec);
     void receiveFirstDspBar(double timeSec,int16_t max,int16_t min);
+
+
 
 signals:
 
@@ -29,6 +34,7 @@ private:
     QValueAxis *m_axisX = nullptr;
     QValueAxis *m_axisY = nullptr;
 
+    uint64_t m_totalBarsOfFirstDsp = 0;
     QList<QPointF> m_countBarsOfFirstDspPointList;
 
     QLineSeries *m_playbackCursorVerticalSeries = nullptr;
