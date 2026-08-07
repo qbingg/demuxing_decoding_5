@@ -14,12 +14,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->btnPause->setCheckable(true);
 
-    initDurPcmBarChart();
+    // initDurPcmBarChart();
 
+    ui->playbackTimelineView->initChart();
     /* 因为ui->durPcmChartView不会因为重播而重置生命周期，所以不能写在btnPlay里，
      * 不然每重播一次就会多connect一次，而旧的又不会disconnect也会生效。
      * 所以改为在初始化chart后，仅连接一次即可。 */
-    connect(ui->durPcmChartView, &MyDurChartView::sendMouseSeek, this, [=](double sec) {
+    connect(ui->playbackTimelineView, &MyPlaybackTimelineView::sendMouseSeek, this, [=](double sec) {
         if (!playerCtx)
             return;
         seekAbsolute(sec);
@@ -30,7 +31,7 @@ MainWindow::~MainWindow()
 {
     delete ui;
 
-    finiDurPcmBarChart();
+    // finiDurPcmBarChart();
 }
 
 int MainWindow::initPlayer()
@@ -95,123 +96,123 @@ void MainWindow::cleanPlayer()
     qDebug() << "Cleanup of playerCtx finished.";
 }
 
-void MainWindow::initDurPcmBarChart()
-{
-    m_durWaveSeries = new QLineSeries();
-    m_durWaveSeries->setName("分块峰值降采样法");
-    m_durWaveSeries->setPen(QPen(QColor(0, 180, 255), 1)); // 浅蓝色线条
-    m_durAxisX = new QValueAxis();
-    m_durAxisX->setTitleText("时间 (s)");
-    // m_durAxisX->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
-    m_durAxisY = new QValueAxis();
-    m_durAxisY->setTitleText("采样值");
-    m_durAxisY->setRange(-32768, 32767); // 16位有符号整数范围
+// void MainWindow::initDurPcmBarChart()
+// {
+//     m_durWaveSeries = new QLineSeries();
+//     m_durWaveSeries->setName("分块峰值降采样法");
+//     m_durWaveSeries->setPen(QPen(QColor(0, 180, 255), 1)); // 浅蓝色线条
+//     m_durAxisX = new QValueAxis();
+//     m_durAxisX->setTitleText("时间 (s)");
+//     // m_durAxisX->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
+//     m_durAxisY = new QValueAxis();
+//     m_durAxisY->setTitleText("采样值");
+//     m_durAxisY->setRange(-32768, 32767); // 16位有符号整数范围
 
-    m_durChart = new QChart();
-    m_durChart->addSeries(m_durWaveSeries);
-    m_durChart->addAxis(m_durAxisX, Qt::AlignBottom);
-    m_durChart->addAxis(m_durAxisY, Qt::AlignLeft);
+//     m_durChart = new QChart();
+//     m_durChart->addSeries(m_durWaveSeries);
+//     m_durChart->addAxis(m_durAxisX, Qt::AlignBottom);
+//     m_durChart->addAxis(m_durAxisY, Qt::AlignLeft);
 
-    //波形数据使用这两个坐标轴映射
-    m_durWaveSeries->attachAxis(m_durAxisX);
-    m_durWaveSeries->attachAxis(m_durAxisY);
+//     //波形数据使用这两个坐标轴映射
+//     m_durWaveSeries->attachAxis(m_durAxisX);
+//     m_durWaveSeries->attachAxis(m_durAxisY);
 
-    // 显示到UI的QChartView控件（对象名：chartView）
-    ui->durPcmChartView->setChart(m_durChart);
-    ui->durPcmChartView->initVerticalSeries(m_durChart,m_durAxisX,m_durAxisY);
-    ui->durPcmChartView->setRenderHint(QPainter::Antialiasing); // 抗锯齿
+//     // 显示到UI的QChartView控件（对象名：chartView）
+//     ui->durPcmChartView->setChart(m_durChart);
+//     ui->durPcmChartView->initVerticalSeries(m_durChart,m_durAxisX,m_durAxisY);
+//     ui->durPcmChartView->setRenderHint(QPainter::Antialiasing); // 抗锯齿
 
-    /*为pcm图表显示进行布局优化*/
-    m_durChart->setTitle("");//去掉标题
-    m_durChart->legend()->hide();//隐藏图表用于解释颜色和系列名称的图例框
-    m_durChart->layout()->setContentsMargins(0, 0, 0, 0);//去掉外层layout的margin间隔
-    m_durChart->setMargins(QMargins(0, 0, 0, 0));//去掉chart内层的margin间隔
-    m_durChart->setBackgroundRoundness(0);//去掉圆角（Qt文档：此属性表示图表背景四角处圆角的直径。）
-    m_durChart->setAnimationOptions(QChart::NoAnimation); // 静态图关闭动画
-    // 去掉坐标轴标题
-    m_durAxisX->setTitleVisible(false);
-    m_durAxisY->setTitleVisible(false);
-    // 去掉坐标轴刻度
-    // m_durAxisX->setLabelsVisible(false);
-    m_durAxisY->setLabelsVisible(false);
-    // // 去掉坐标轴网格
-    // m_durAxisX->setGridLineVisible(false);
-    // m_durAxisY->setGridLineVisible(false);
+//     /*为pcm图表显示进行布局优化*/
+//     m_durChart->setTitle("");//去掉标题
+//     m_durChart->legend()->hide();//隐藏图表用于解释颜色和系列名称的图例框
+//     m_durChart->layout()->setContentsMargins(0, 0, 0, 0);//去掉外层layout的margin间隔
+//     m_durChart->setMargins(QMargins(0, 0, 0, 0));//去掉chart内层的margin间隔
+//     m_durChart->setBackgroundRoundness(0);//去掉圆角（Qt文档：此属性表示图表背景四角处圆角的直径。）
+//     m_durChart->setAnimationOptions(QChart::NoAnimation); // 静态图关闭动画
+//     // 去掉坐标轴标题
+//     m_durAxisX->setTitleVisible(false);
+//     m_durAxisY->setTitleVisible(false);
+//     // 去掉坐标轴刻度
+//     // m_durAxisX->setLabelsVisible(false);
+//     m_durAxisY->setLabelsVisible(false);
+//     // // 去掉坐标轴网格
+//     // m_durAxisX->setGridLineVisible(false);
+//     // m_durAxisY->setGridLineVisible(false);
 
-    m_durAudioClockSeries = new QLineSeries();
-    m_durAudioClockSeries->setPen(QPen(QColor(255, 180, 0), 3));
-    m_durChart->addSeries(m_durAudioClockSeries);
-    m_durAudioClockSeries->attachAxis(m_durAxisX);
-    m_durAudioClockSeries->attachAxis(m_durAxisY);
+//     m_durAudioClockSeries = new QLineSeries();
+//     m_durAudioClockSeries->setPen(QPen(QColor(255, 180, 0), 3));
+//     m_durChart->addSeries(m_durAudioClockSeries);
+//     m_durAudioClockSeries->attachAxis(m_durAxisX);
+//     m_durAudioClockSeries->attachAxis(m_durAxisY);
 
-    m_durVideoClockSeries = new QLineSeries();
-    m_durVideoClockSeries->setPen(QPen(QColor(180, 0, 255), 3));
-    m_durChart->addSeries(m_durVideoClockSeries);
-    m_durVideoClockSeries->attachAxis(m_durAxisX);
-    m_durVideoClockSeries->attachAxis(m_durAxisY);
-}
+//     m_durVideoClockSeries = new QLineSeries();
+//     m_durVideoClockSeries->setPen(QPen(QColor(180, 0, 255), 3));
+//     m_durChart->addSeries(m_durVideoClockSeries);
+//     m_durVideoClockSeries->attachAxis(m_durAxisX);
+//     m_durVideoClockSeries->attachAxis(m_durAxisY);
+// }
 
-void MainWindow::resetDurPcmBarChart()
-{
-    /* 清除chart旧视频的idrSeries
-     * 不建议：
-     * m_durChart->removeSeries(m_durWaveSeries);//releases the ownership
-     * m_durChart ->removeAllSeries();//Qt文档：Removes and deletes
-     * m_durChart->addSeries(m_durWaveSeries);
-     * 因为：Qt文档：A newly added series is not attached to any axes by default
-     *      （默认情况下，新添加的系列不会附加到任何轴上）
-     * 需要再次：
-     * m_durWaveSeries->attachAxis(m_durAxisX);
-     * m_durWaveSeries->attachAxis(m_durAxisY);
-     * 也不建议：
-     * if (series != m_durWaveSeries) {...}
-     * 每次新加m_series都需要在这if加上判断防止误删，我已经遭遇2次崩溃，调试发现因为如此。
-     */
-    const auto seriesList = m_durChart->series();
-    for (QAbstractSeries *series : seriesList) {
-        if(m_durIdrSeriesList.contains(series)){
-            m_durChart->removeSeries(series);
-            delete series;
-        }
-    }
-    //清空记录idr的list
-    m_durIdrSeriesList.clear();
+// void MainWindow::resetDurPcmBarChart()
+// {
+//     /* 清除chart旧视频的idrSeries
+//      * 不建议：
+//      * m_durChart->removeSeries(m_durWaveSeries);//releases the ownership
+//      * m_durChart ->removeAllSeries();//Qt文档：Removes and deletes
+//      * m_durChart->addSeries(m_durWaveSeries);
+//      * 因为：Qt文档：A newly added series is not attached to any axes by default
+//      *      （默认情况下，新添加的系列不会附加到任何轴上）
+//      * 需要再次：
+//      * m_durWaveSeries->attachAxis(m_durAxisX);
+//      * m_durWaveSeries->attachAxis(m_durAxisY);
+//      * 也不建议：
+//      * if (series != m_durWaveSeries) {...}
+//      * 每次新加m_series都需要在这if加上判断防止误删，我已经遭遇2次崩溃，调试发现因为如此。
+//      */
+//     const auto seriesList = m_durChart->series();
+//     for (QAbstractSeries *series : seriesList) {
+//         if(m_durIdrSeriesList.contains(series)){
+//             m_durChart->removeSeries(series);
+//             delete series;
+//         }
+//     }
+//     //清空记录idr的list
+//     m_durIdrSeriesList.clear();
 
-    //清屏（注意通过replace更新，并不存储数据）
-    m_durWaveSeries->clear();
-    //新视频的总时长
-    m_durAxisX->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
-    //清空进度条list（存储的旧视频数据）
-    m_durBarPoints.clear();
+//     //清屏（注意通过replace更新，并不存储数据）
+//     m_durWaveSeries->clear();
+//     //新视频的总时长
+//     m_durAxisX->setRange(0, (playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base))); // 时长 0~duration(音频流)，注意要考虑时间基
+//     //清空进度条list（存储的旧视频数据）
+//     m_durBarPoints.clear();
 
-    /*重置Timer
-     * 方法1. delete旧视频的Timer
-     * 方法2. disconnect比较麻烦不直观
-     */
-    if(m_durTimer){
-        m_durTimer->stop();
-        delete m_durTimer;
-        m_durTimer = nullptr;
-    }
-    m_durTimer = new QTimer();
-}
+//     /*重置Timer
+//      * 方法1. delete旧视频的Timer
+//      * 方法2. disconnect比较麻烦不直观
+//      */
+//     if(m_durTimer){
+//         m_durTimer->stop();
+//         delete m_durTimer;
+//         m_durTimer = nullptr;
+//     }
+//     m_durTimer = new QTimer();
+// }
 
-void MainWindow::finiDurPcmBarChart()
-{
-    /* 1. m_durChart已经通过ui->durPcmChartView->setChart(m_durChart);接管
-     * 2. m_durWaveSeries已经通过m_durChart->addSeries(m_durWaveSeries);接管
-     * 3. m_durAxisX已经通过m_durChart->addAxis(m_durAxisX, Qt::AlignBottom);接管
-     * 4. m_durAxisY已经通过m_durChart->addAxis(m_durAxisY, Qt::AlignLeft);接管
-     * 5. m_durBarPoints不是指针对象，不需要管
-     */
+// void MainWindow::finiDurPcmBarChart()
+// {
+//     /* 1. m_durChart已经通过ui->durPcmChartView->setChart(m_durChart);接管
+//      * 2. m_durWaveSeries已经通过m_durChart->addSeries(m_durWaveSeries);接管
+//      * 3. m_durAxisX已经通过m_durChart->addAxis(m_durAxisX, Qt::AlignBottom);接管
+//      * 4. m_durAxisY已经通过m_durChart->addAxis(m_durAxisY, Qt::AlignLeft);接管
+//      * 5. m_durBarPoints不是指针对象，不需要管
+//      */
 
-    // 如果是new QTimer(this);有父对象，则不需要此步
-    if(m_durTimer){
-        m_durTimer->stop();
-        delete m_durTimer;
-        m_durTimer = nullptr;
-    }
-}
+//     // 如果是new QTimer(this);有父对象，则不需要此步
+//     if(m_durTimer){
+//         m_durTimer->stop();
+//         delete m_durTimer;
+//         m_durTimer = nullptr;
+//     }
+// }
 
 void MainWindow::seekRelative(double offsetSec)
 {
@@ -278,12 +279,27 @@ void MainWindow::on_btnPlay_clicked()
 
     // 四步：delete -> new -> connect -> start
     cleanPlayer();
+    /*重置Timer
+     * 方法1. delete旧视频的Timer
+     * 方法2. disconnect比较麻烦不直观
+     */
+    if(m_durTimer){
+        m_durTimer->stop();
+        delete m_durTimer;
+        m_durTimer = nullptr;
+    }
 
     if (initPlayer() < 0) {
         qDebug() << "initPlayer Failed.";
         return;
     }
-    resetDurPcmBarChart();
+    // resetDurPcmBarChart();
+    double durationSec = playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base); // 时长 0~duration(音频流)，注意要考虑时间基
+    ui->playbackTimelineView->resetChart(durationSec);
+    ui->playbackTimelineView->resetTotalBarsOfFirstDsp(durationSec,
+                                                       playerCtx->audio_tgt_freq,
+                                                       playerCtx->firstDspIntervalFrames);
+    m_durTimer = new QTimer();
 
     connect(m_demuxThread,&MyDemuxThread::sendVideoPktIDR,this,[=](double ptsSec){
         /* 在极端情况下，是可触发的，所以还是加判断吧。
@@ -295,74 +311,77 @@ void MainWindow::on_btnPlay_clicked()
             qDebug()<<"receive VideoPktIDR: playSessionId已改变，不往新视频插入旧数据";
             return;
         }
-        QLineSeries *idr = new QLineSeries();
-        idr->setPen(QPen(Qt::black, 1));
-        ui->durPcmChartView->chart()->addSeries(idr);
-        idr->attachAxis(m_durAxisX);
-        idr->attachAxis(m_durAxisY);
-        idr->append(ptsSec, -32768);
-        idr->append(ptsSec, 32767);
+        // QLineSeries *idr = new QLineSeries();
+        // idr->setPen(QPen(Qt::black, 1));
+        // ui->durPcmChartView->chart()->addSeries(idr);
+        // idr->attachAxis(m_durAxisX);
+        // idr->attachAxis(m_durAxisY);
+        // idr->append(ptsSec, -32768);
+        // idr->append(ptsSec, 32767);
         qCDebug(demux)<<"receive VideoPktIDR: "<<ptsSec;
         // 记录idr以便reset时清除chart旧视频的idrSeries
-        m_durIdrSeriesList.append(idr);
+        // m_durIdrSeriesList.append(idr);
+        ui->playbackTimelineView->receiveVideoPktIDR(ptsSec);
     },Qt::QueuedConnection);
-    connect(m_audioDecodeThread,&MyAudioDecodeThread::sendpcmPeakBar,this,[=](double time,int16_t max,int16_t min){
+    connect(m_audioDecodeThread,&MyAudioDecodeThread::sendpcmPeakBar,this,[=](double timeSec,int16_t max,int16_t min){
         if(m_playSessionId != playSessionId){
             qDebug()<<"receive pcmPeakBar: playSessionId已改变，不往新视频插入旧数据";
             return;
         }
-        qCDebug(dsp1) << "receive pcmPeakBar audio time(sec):" << QString::number(time, 'd', 3)
+        qCDebug(dsp1) << "receive pcmPeakBar audio time(sec):" << QString::number(timeSec, 'd', 3)
                       << "\t 1stDpsIntervalMs: "
                       << playerCtx->theFirstDownSamplingIntervalMilliseconds;
-        m_durBarPoints.append(QPointF(time,max));
-        m_durBarPoints.append(QPointF(time,min));
+        // m_durBarPoints.append(QPointF(timeSec,max));
+        // m_durBarPoints.append(QPointF(timeSec,min));
+        ui->playbackTimelineView->receiveFirstDspBar(timeSec,max,min);
     },Qt::QueuedConnection);
     connect(m_durTimer,&QTimer::timeout,this,[=]{
         /** 第二次降采样：以像素为单位，如width */
-        //目标柱状图数量
-        const int totalBarsOfSecondDsp = ui->durPcmChartView->width();
-        //总时长
-        const double duration = playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base);
-        //采样率（不是解码后的，而是swr后给sdl播放的）
-        const double sampleRate = playerCtx->audio_tgt_freq;//采样率（每秒采样次数）48000.0;
-        //总采样数（考虑声道，如2sample=1frame）
-        const uint64_t totalFrames = duration * sampleRate;
-        //第一次降采样后，总采样数
-        uint64_t totalBarsOfFirstDsp = totalFrames / playerCtx->firstDspIntervalFrames;
-        //第二次采样间隔
-        const int secondDspIntervalBars = totalBarsOfFirstDsp / totalBarsOfSecondDsp;
+        // //目标柱状图数量
+        // const int totalBarsOfSecondDsp = ui->durPcmChartView->width();
+        // //总时长
+        // const double duration = playerCtx->audio_stream->duration * av_q2d(playerCtx->audio_stream->time_base);
+        // //采样率（不是解码后的，而是swr后给sdl播放的）
+        // const double sampleRate = playerCtx->audio_tgt_freq;//采样率（每秒采样次数）48000.0;
+        // //总采样数（考虑声道，如2sample=1frame）
+        // const uint64_t totalFrames = duration * sampleRate;
+        // //第一次降采样后，总采样数
+        // uint64_t totalBarsOfFirstDsp = totalFrames / playerCtx->firstDspIntervalFrames;
+        // //第二次采样间隔
+        // const int secondDspIntervalBars = totalBarsOfFirstDsp / totalBarsOfSecondDsp;
 
-        QList<QPointF> countBarsOfSecondDspPointList;
-        // blockDownSampling(m_durPoints,pList,pixelBars);
-        // intervalDownSampling(m_durPoints,pList,dspBarsInterval);
-        // myffut::durBarChartDownSampling(m_durBarPoints,totalBarsOfFirstDsp,pList,ui->durPcmChartView->width());
+        // QList<QPointF> countBarsOfSecondDspPointList;
+        // // blockDownSampling(m_durPoints,pList,pixelBars);
+        // // intervalDownSampling(m_durPoints,pList,dspBarsInterval);
+        // // myffut::durBarChartDownSampling(m_durBarPoints,totalBarsOfFirstDsp,pList,ui->durPcmChartView->width());
 
-        // m_durBarPoints会在未来改名为countBarsOfFirstDspPointList这样的规范
-        if (secondDspIntervalBars == 0) {
-            countBarsOfSecondDspPointList = m_durBarPoints;
-            qCDebug(dsp2) << "totalBarsOfFirstDspPoint 太少了，除数为0，dps2无需降采样";
-        }else{
-            myffut::intervalDownSampling(m_durBarPoints, countBarsOfSecondDspPointList, secondDspIntervalBars);
-        }
-        m_durWaveSeries->replace(countBarsOfSecondDspPointList);
+        // // m_durBarPoints会在未来改名为countBarsOfFirstDspPointList这样的规范
+        // if (secondDspIntervalBars == 0) {
+        //     countBarsOfSecondDspPointList = m_durBarPoints;
+        //     qCDebug(dsp2) << "totalBarsOfFirstDspPoint 太少了，除数为0，dps2无需降采样";
+        // }else{
+        //     myffut::intervalDownSampling(m_durBarPoints, countBarsOfSecondDspPointList, secondDspIntervalBars);
+        // }
+        // m_durWaveSeries->replace(countBarsOfSecondDspPointList);
 
-        qCDebug(dsp2) << "countDsp1Points:" << m_durBarPoints.size()
-                      << "\t countDsp2Points:" << countBarsOfSecondDspPointList.size()
-                      << "\t dsp2IntervalBars:" << secondDspIntervalBars
-                      << "\t totalBarsOfDsp1(*间隔ms=时长):" << totalBarsOfFirstDsp
-                      << "\t totalBarsOfDsp2(chart.width)" << totalBarsOfSecondDsp
-                      << "\t 注意验证公式: countPoints = totalBars * 2";
+        // qCDebug(dsp2) << "countDsp1Points:" << m_durBarPoints.size()
+        //               << "\t countDsp2Points:" << countBarsOfSecondDspPointList.size()
+        //               << "\t dsp2IntervalBars:" << secondDspIntervalBars
+        //               << "\t totalBarsOfDsp1(*间隔ms=时长):" << totalBarsOfFirstDsp
+        //               << "\t totalBarsOfDsp2(chart.width)" << totalBarsOfSecondDsp
+        //               << "\t 注意验证公式: countPoints = totalBars * 2";
 
-        QList<QPointF> pAudioClockList;
-        pAudioClockList.append(QPointF(playerCtx->audio_clock,0));
-        pAudioClockList.append(QPointF(playerCtx->audio_clock,-32768));
-        m_durAudioClockSeries->replace(pAudioClockList);
+        // QList<QPointF> pAudioClockList;
+        // pAudioClockList.append(QPointF(playerCtx->audio_clock,0));
+        // pAudioClockList.append(QPointF(playerCtx->audio_clock,-32768));
+        // m_durAudioClockSeries->replace(pAudioClockList);
 
-        QList<QPointF> pVideoClockList;
-        pVideoClockList.append(QPointF(playerCtx->video_clock,0));
-        pVideoClockList.append(QPointF(playerCtx->video_clock,32767));
-        m_durVideoClockSeries->replace(pVideoClockList);
+        // QList<QPointF> pVideoClockList;
+        // pVideoClockList.append(QPointF(playerCtx->video_clock,0));
+        // pVideoClockList.append(QPointF(playerCtx->video_clock,32767));
+        // m_durVideoClockSeries->replace(pVideoClockList);
 
+        ui->playbackTimelineView->updateChartView(playerCtx->audio_clock,playerCtx->video_clock);
     });
     m_durTimer->start(100);
     connect(m_videoDecodeThread,

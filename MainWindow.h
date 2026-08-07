@@ -35,9 +35,9 @@ public:
     int initPlayer();
     void cleanPlayer();
 
-    void initDurPcmBarChart();
-    void resetDurPcmBarChart();
-    void finiDurPcmBarChart();
+    // void initDurPcmBarChart();
+    // void resetDurPcmBarChart();
+    // void finiDurPcmBarChart();
 
     void seekRelative(double offsetSec);
     void seekAbsolute(double targetSec);
