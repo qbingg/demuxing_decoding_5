@@ -19,7 +19,7 @@ qt_add_executable(demuxing_decoding_5
     MyAudioDecodeThread.h MyAudioDecodeThread.cpp
     MyVideoDecodeThread.h MyVideoDecodeThread.cpp
     MyYUV420POpenGLWidget.h
-    MyDurChartView.h
+
     MyPlaybackTimelineView.h MyPlaybackTimelineView.cpp
 )
 
