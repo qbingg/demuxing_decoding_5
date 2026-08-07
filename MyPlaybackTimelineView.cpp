@@ -70,6 +70,23 @@ void MyPlaybackTimelineView::initChart()
     m_chart->addSeries(m_videoClockSeries);
     m_videoClockSeries->attachAxis(m_axisX);
     m_videoClockSeries->attachAxis(m_axisY);
+
+    /*为pcm图表显示进行布局优化*/
+    m_chart->setTitle("");//去掉标题
+    m_chart->legend()->hide();//隐藏图表用于解释颜色和系列名称的图例框
+    m_chart->layout()->setContentsMargins(0, 0, 0, 0);//去掉外层layout的margin间隔
+    m_chart->setMargins(QMargins(0, 0, 0, 0));//去掉chart内层的margin间隔
+    m_chart->setBackgroundRoundness(0);//去掉圆角（Qt文档：此属性表示图表背景四角处圆角的直径。）
+    m_chart->setAnimationOptions(QChart::NoAnimation); // 静态图关闭动画
+    // 去掉坐标轴标题
+    m_axisX->setTitleVisible(false);
+    m_axisY->setTitleVisible(false);
+    // 去掉坐标轴刻度
+    // m_axisX->setLabelsVisible(false);
+    m_axisY->setLabelsVisible(false);
+    // // 去掉坐标轴网格
+    // m_axisX->setGridLineVisible(false);
+    // m_axisY->setGridLineVisible(false);
 }
 
 void MyPlaybackTimelineView::resetChart(const double newDurationSec)
