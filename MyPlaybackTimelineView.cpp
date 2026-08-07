@@ -137,6 +137,25 @@ void MyPlaybackTimelineView::resetTotalBarsOfFirstDsp(const double newDurationSe
     m_totalBarsOfFirstDsp = totalFrames / newFirstDspIntervalFrames;
 }
 
+void MyPlaybackTimelineView::receiveVideoPktIDR(double ptsSec)
+{
+    QLineSeries *idr = new QLineSeries();
+    idr->setPen(QPen(Qt::black, 1));
+    m_chart->addSeries(idr);
+    idr->attachAxis(m_axisX);
+    idr->attachAxis(m_axisY);
+    idr->append(ptsSec, -32768);
+    idr->append(ptsSec, 32767);
+    // 记录idr以便reset时清除chart旧视频的idrSeries
+    m_idrSeriesList.append(idr);
+}
+
+void MyPlaybackTimelineView::receiveFirstDspBar(double timeSec, int16_t max, int16_t min)
+{
+    m_countBarsOfFirstDspPointList.append(QPointF(timeSec, max));
+    m_countBarsOfFirstDspPointList.append(QPointF(timeSec, min));
+}
+
 void MyPlaybackTimelineView::updateChartView(double newAudioClock, double newVideoClock)
 {
     /** 第二次降采样：以像素为单位，如width */
