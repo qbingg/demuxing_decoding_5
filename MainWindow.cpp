@@ -28,6 +28,12 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+
+    if(m_playbackTimer){
+        m_playbackTimer->stop();
+        delete m_playbackTimer;
+        m_playbackTimer = nullptr;
+    }
 }
 
 int MainWindow::initPlayer()
@@ -161,10 +167,10 @@ void MainWindow::on_btnPlay_clicked()
      * 方法1. delete旧视频的Timer
      * 方法2. disconnect比较麻烦不直观
      */
-    if(m_durTimer){
-        m_durTimer->stop();
-        delete m_durTimer;
-        m_durTimer = nullptr;
+    if(m_playbackTimer){
+        m_playbackTimer->stop();
+        delete m_playbackTimer;
+        m_playbackTimer = nullptr;
     }
 
     if (initPlayer() < 0) {
@@ -177,7 +183,7 @@ void MainWindow::on_btnPlay_clicked()
     ui->playbackTimelineView->resetTotalBarsOfFirstDsp(durationSec,
                                                        playerCtx->audio_tgt_freq,
                                                        playerCtx->firstDspIntervalFrames);
-    m_durTimer = new QTimer();
+    m_playbackTimer = new QTimer();
 
     connect(m_demuxThread,&MyDemuxThread::sendVideoPktIDR,this,[=](double ptsSec){
         /* 在极端情况下，是可触发的，所以还是加判断吧。
@@ -202,10 +208,10 @@ void MainWindow::on_btnPlay_clicked()
                       << playerCtx->theFirstDownSamplingIntervalMilliseconds;
         ui->playbackTimelineView->receiveFirstDspBar(timeSec,max,min);
     },Qt::QueuedConnection);
-    connect(m_durTimer,&QTimer::timeout,this,[=]{
+    connect(m_playbackTimer,&QTimer::timeout,this,[=]{
         ui->playbackTimelineView->updateChartView(playerCtx->audio_clock,playerCtx->video_clock);
     });
-    m_durTimer->start(100);
+    m_playbackTimer->start(100);
     connect(m_videoDecodeThread,
             &MyVideoDecodeThread::sendYuv420pFrame,
             ui->widget,

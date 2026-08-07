@@ -70,7 +70,7 @@ private:
     MyVideoDecodeThread *m_videoDecodeThread = nullptr;
 
     //进度条音频波形图
-    QTimer *m_durTimer = nullptr;
+    QTimer *m_playbackTimer = nullptr;
 
 };
 #endif // MAINWINDOW_H
