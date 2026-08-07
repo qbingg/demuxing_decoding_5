@@ -225,7 +225,7 @@ void MainWindow::on_btnPlay_clicked()
 
 void MainWindow::on_btnPause_clicked(bool checked)
 {
-    if (!playerCtx && !playerCtx->sdl_audio_stream) {
+    if (!playerCtx || !playerCtx->sdl_audio_stream) {
         ui->btnPause->setChecked(false);
         return;
     }
