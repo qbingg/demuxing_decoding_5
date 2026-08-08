@@ -40,8 +40,8 @@ private:
     uint64_t m_totalBarsOfFirstDsp = 0;
     QList<QPointF> m_countBarsOfFirstDspPointList;
 
-    QLineSeries *m_playbackCursorVerticalSeries = nullptr;
     QLineSeries *m_secondDspSeries = nullptr;
+    QLineSeries *m_playbackCursorVerticalSeries = nullptr;
     QLineSeries *m_audioClockSeries = nullptr;
     QLineSeries *m_videoClockSeries = nullptr;
     QList<QLineSeries*> m_idrSeriesList;

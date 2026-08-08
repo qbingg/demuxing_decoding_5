@@ -32,6 +32,15 @@ void MyPlaybackTimelineView::initChart()
     m_chart->addAxis(m_axisY, Qt::AlignLeft);
 
     /** 初始化QLineSeries */
+    /* dsp2进度条音频波形图 */
+    m_secondDspSeries = new QLineSeries();
+    m_secondDspSeries->setName("dsp2进度条音频波形图");
+    m_secondDspSeries->setPen(QPen(QColor(0, 180, 255), 1)); // 浅蓝色线条
+    m_chart->addSeries(m_secondDspSeries);
+    //波形数据使用这两个坐标轴映射
+    m_secondDspSeries->attachAxis(m_axisX);
+    m_secondDspSeries->attachAxis(m_axisY);
+
     /* 鼠标垂直线 */
     m_playbackCursorVerticalSeries = new QLineSeries();
     m_playbackCursorVerticalSeries->setName("鼠标垂直线");
@@ -47,15 +56,6 @@ void MyPlaybackTimelineView::initChart()
     // 3. 解决报错ASSERT failure in QList::operator[]: "index out of range"
     m_playbackCursorVerticalSeries->append(0, 0); // 初始占位点
     m_playbackCursorVerticalSeries->append(0, 0); // 初始占位点
-
-    /* dsp2进度条音频波形图 */
-    m_secondDspSeries = new QLineSeries();
-    m_secondDspSeries->setName("dsp2进度条音频波形图");
-    m_secondDspSeries->setPen(QPen(QColor(0, 180, 255), 1)); // 浅蓝色线条
-    m_chart->addSeries(m_secondDspSeries);
-    //波形数据使用这两个坐标轴映射
-    m_secondDspSeries->attachAxis(m_axisX);
-    m_secondDspSeries->attachAxis(m_axisY);
 
     /* 音频时钟线 */
     m_audioClockSeries = new QLineSeries();
