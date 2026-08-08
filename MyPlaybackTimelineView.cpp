@@ -85,7 +85,7 @@ void MyPlaybackTimelineView::initChart()
     // m_axisX->setLabelsVisible(false);
     m_axisY->setLabelsVisible(false);
     // // 去掉坐标轴网格
-    // m_axisX->setGridLineVisible(false);
+    m_axisX->setGridLineVisible(false);
     // m_axisY->setGridLineVisible(false);
 }
 
@@ -170,6 +170,12 @@ void MyPlaybackTimelineView::updateChartView(double newAudioClock, double newVid
         countBarsOfSecondDspPointList = m_countBarsOfFirstDspPointList;
         qCDebug(dsp2) << "totalBarsOfFirstDspPoint 太少了，除数为0，dps2无需降采样";
     } else {
+        // // 分块峰值降采样，简单易用，但是波形图会闪烁（countBars == totalBars）
+        // myffut::blockDownSampling(m_countBarsOfFirstDspPointList,
+        //                           countBarsOfSecondDspPointList,
+        //                           totalBarsOfSecondDsp);
+
+        // 等间隔峰值降采样，波形图不会变化，但是seek回放会额外增加countBars数导致变卡
         myffut::intervalDownSampling(m_countBarsOfFirstDspPointList,
                                      countBarsOfSecondDspPointList,
                                      secondDspIntervalBars);
